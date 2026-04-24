@@ -1,0 +1,1834 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>귓것 — 탑의 기억</title>
+<style>
+  :root {
+    --bg: #0a0706;
+    --bg-soft: #120e0c;
+    --ink: #e8d8b8;
+    --ink-dim: #8a7960;
+    --blood: #7a1e1a;
+    --gold: #a88853;
+    --accent: #c9a76a;
+    --border: #3a2e22;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Serif KR", "Nanum Myeongjo", "Batang", serif;
+    overflow: hidden;
+  }
+
+  body {
+    background:
+      radial-gradient(ellipse at 50% 20%, rgba(90,40,20,0.25), transparent 60%),
+      radial-gradient(ellipse at 50% 100%, rgba(0,0,0,0.8), transparent 60%),
+      var(--bg);
+    position: relative;
+  }
+
+  /* 배경 노이즈 (먹 번짐 느낌) */
+  body::before {
+    content: "";
+    position: fixed; inset: 0;
+    background-image:
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.015) 0 1px, transparent 1px 3px),
+      repeating-linear-gradient(90deg, rgba(0,0,0,0.04) 0 1px, transparent 1px 4px);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  #app {
+    position: relative;
+    z-index: 2;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+  }
+
+  /* ===== 타이틀 화면 ===== */
+  .title-screen {
+    text-align: center;
+    max-width: 760px;
+    animation: fadeIn 1.8s ease-out;
+  }
+
+  .title-main {
+    font-size: clamp(4rem, 12vw, 8rem);
+    font-weight: 900;
+    letter-spacing: 0.3em;
+    color: var(--ink);
+    text-shadow:
+      0 0 20px rgba(170, 40, 20, 0.4),
+      0 0 60px rgba(170, 40, 20, 0.15);
+    margin-bottom: 0.5rem;
+    position: relative;
+  }
+
+  .title-main::after {
+    content: "";
+    display: block;
+    width: 40%;
+    height: 1px;
+    margin: 1.2rem auto 0.8rem;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  }
+
+  .title-sub {
+    font-size: clamp(1rem, 2vw, 1.3rem);
+    color: var(--ink-dim);
+    letter-spacing: 0.4em;
+    margin-bottom: 3rem;
+  }
+
+  .title-epigraph {
+    font-size: 0.95rem;
+    color: var(--ink-dim);
+    line-height: 2;
+    max-width: 520px;
+    margin: 0 auto 3.5rem;
+    font-style: italic;
+    opacity: 0.85;
+    text-align: center;
+  }
+
+  .title-epigraph cite {
+    display: block;
+    margin-top: 1rem;
+    font-size: 0.8rem;
+    color: var(--gold);
+    font-style: normal;
+    letter-spacing: 0.2em;
+  }
+
+  .title-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    align-items: center;
+  }
+
+  .btn {
+    background: transparent;
+    color: var(--ink);
+    border: 1px solid var(--border);
+    padding: 0.9rem 3rem;
+    font-size: 1rem;
+    font-family: inherit;
+    letter-spacing: 0.3em;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 260px;
+    position: relative;
+  }
+
+  .btn:hover {
+    background: rgba(201, 167, 106, 0.08);
+    border-color: var(--accent);
+    color: var(--accent);
+    letter-spacing: 0.4em;
+  }
+
+  .btn:disabled {
+    color: var(--ink-dim);
+    border-color: #2a2018;
+    cursor: not-allowed;
+  }
+
+  .btn-primary {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .btn-primary:hover {
+    background: rgba(201, 167, 106, 0.15);
+    box-shadow: 0 0 20px rgba(201, 167, 106, 0.2);
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeInSlow {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  /* ===== 공통 화면 컨테이너 ===== */
+  .screen {
+    width: 100%;
+    max-width: 900px;
+    animation: fadeIn 0.8s ease-out;
+  }
+
+  .screen-hidden { display: none; }
+
+  /* ===== 캐릭터 선택 ===== */
+  .select-header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+  }
+
+  .select-header h2 {
+    font-size: 2rem;
+    letter-spacing: 0.3em;
+    color: var(--accent);
+    margin-bottom: 0.6rem;
+    font-weight: 500;
+  }
+
+  .select-header p {
+    color: var(--ink-dim);
+    font-size: 0.95rem;
+    letter-spacing: 0.1em;
+  }
+
+  .char-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.2rem;
+    margin-bottom: 2rem;
+  }
+
+  .char-card {
+    background: linear-gradient(180deg, rgba(30,22,18,0.6), rgba(15,10,8,0.8));
+    border: 1px solid var(--border);
+    padding: 1.5rem 1.2rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .char-card::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    opacity: 0.3;
+  }
+
+  .char-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.6), 0 0 20px rgba(201,167,106,0.1);
+  }
+
+  .char-card .glyph {
+    font-size: 3rem;
+    color: var(--accent);
+    margin-bottom: 0.8rem;
+    font-weight: 900;
+    letter-spacing: -0.1em;
+    opacity: 0.85;
+  }
+
+  .char-card h3 {
+    font-size: 1.3rem;
+    color: var(--ink);
+    margin-bottom: 0.4rem;
+    letter-spacing: 0.15em;
+  }
+
+  .char-card .role {
+    font-size: 0.8rem;
+    color: var(--gold);
+    letter-spacing: 0.2em;
+    margin-bottom: 0.8rem;
+  }
+
+  .char-card .desc {
+    font-size: 0.85rem;
+    color: var(--ink-dim);
+    line-height: 1.7;
+  }
+
+  .char-card.completed {
+    border-color: var(--blood);
+  }
+
+  .char-card.completed::after {
+    content: "흉접";
+    position: absolute;
+    top: 8px; right: 8px;
+    font-size: 0.7rem;
+    color: var(--blood);
+    letter-spacing: 0.2em;
+    border: 1px solid var(--blood);
+    padding: 2px 6px;
+  }
+
+  .nav-bar {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 1.5rem;
+  }
+
+  .btn-ghost {
+    background: transparent;
+    border: none;
+    color: var(--ink-dim);
+    font-family: inherit;
+    font-size: 0.9rem;
+    letter-spacing: 0.2em;
+    cursor: pointer;
+    padding: 0.5rem 1rem;
+    transition: color 0.3s;
+  }
+
+  .btn-ghost:hover { color: var(--accent); }
+
+  /* ===== 씬 화면 ===== */
+  .scene-wrap {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 4rem);
+    max-height: 800px;
+  }
+
+  .scene-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 2rem;
+  }
+
+  .scene-location {
+    color: var(--gold);
+    font-size: 0.9rem;
+    letter-spacing: 0.3em;
+  }
+
+  .scene-character {
+    color: var(--ink-dim);
+    font-size: 0.85rem;
+    letter-spacing: 0.2em;
+  }
+
+  .scene-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem 0.5rem 2rem 0.5rem;
+    line-height: 2.1;
+    font-size: 1.05rem;
+    color: var(--ink);
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+
+  .scene-body::-webkit-scrollbar { width: 6px; }
+  .scene-body::-webkit-scrollbar-thumb { background: var(--border); }
+
+  .scene-body p {
+    margin-bottom: 1.2rem;
+    animation: fadeInSlow 0.8s ease-out;
+  }
+
+  .scene-body .dialogue {
+    color: var(--accent);
+    padding-left: 1.2rem;
+    border-left: 2px solid var(--border);
+    font-style: italic;
+  }
+
+  .scene-body .whisper {
+    color: var(--ink-dim);
+    font-size: 0.95rem;
+    text-align: center;
+    letter-spacing: 0.15em;
+  }
+
+  .scene-body .omen {
+    color: var(--blood);
+    text-align: center;
+    font-size: 1.1rem;
+    letter-spacing: 0.3em;
+    margin: 2rem 0;
+    text-shadow: 0 0 12px rgba(122, 30, 26, 0.6);
+  }
+
+  .cursor-blink::after {
+    content: "▍";
+    color: var(--accent);
+    animation: blink 0.8s step-end infinite;
+    margin-left: 2px;
+  }
+
+  @keyframes blink {
+    50% { opacity: 0; }
+  }
+
+  .scene-footer {
+    border-top: 1px solid var(--border);
+    padding-top: 1.2rem;
+    margin-top: 1rem;
+  }
+
+  .choices {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    animation: fadeIn 0.6s ease-out;
+  }
+
+  .choice {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--ink);
+    font-family: inherit;
+    padding: 0.9rem 1.4rem;
+    text-align: left;
+    cursor: pointer;
+    font-size: 0.98rem;
+    transition: all 0.25s;
+    line-height: 1.6;
+  }
+
+  .choice:hover {
+    border-color: var(--accent);
+    background: rgba(201,167,106,0.06);
+    color: var(--accent);
+    transform: translateX(4px);
+  }
+
+  .choice .idx {
+    color: var(--gold);
+    margin-right: 0.8rem;
+    font-weight: 700;
+  }
+
+  .continue-btn {
+    display: block;
+    margin: 0 auto;
+    padding: 0.6rem 2rem;
+    font-size: 0.9rem;
+    letter-spacing: 0.4em;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--gold);
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+
+  .continue-btn:hover {
+    border-color: var(--accent);
+    background: rgba(201,167,106,0.08);
+  }
+
+  /* ===== 결말 화면 ===== */
+  .ending-screen {
+    text-align: center;
+    max-width: 700px;
+    padding: 3rem 2rem;
+  }
+
+  .ending-title {
+    font-size: 2.5rem;
+    letter-spacing: 0.3em;
+    color: var(--blood);
+    margin-bottom: 1rem;
+    text-shadow: 0 0 20px rgba(122, 30, 26, 0.5);
+  }
+
+  .ending-title.safe { color: var(--gold); text-shadow: 0 0 20px rgba(201,167,106,0.3); }
+  .ending-title.cursed { color: var(--blood); }
+
+  .ending-label {
+    font-size: 0.85rem;
+    color: var(--ink-dim);
+    letter-spacing: 0.4em;
+    margin-bottom: 2rem;
+  }
+
+  .ending-body {
+    color: var(--ink);
+    line-height: 2;
+    font-size: 1rem;
+    margin-bottom: 2.5rem;
+    text-align: left;
+  }
+
+  .ending-body p {
+    margin-bottom: 1rem;
+    animation: fadeInSlow 1s ease-out;
+  }
+
+  .ending-divider {
+    width: 50%;
+    height: 1px;
+    margin: 2rem auto;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    opacity: 0.4;
+  }
+
+  /* ===== 귓것 도감 ===== */
+  .bestiary {
+    padding: 1rem 0.5rem;
+  }
+
+  .bestiary-header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+  }
+
+  .bestiary-header h2 {
+    font-size: 2rem;
+    letter-spacing: 0.4em;
+    color: var(--accent);
+    font-weight: 500;
+    margin-bottom: 0.6rem;
+  }
+
+  .bestiary-header p {
+    color: var(--ink-dim);
+    font-size: 0.9rem;
+    letter-spacing: 0.15em;
+    line-height: 1.8;
+  }
+
+  .bestiary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .ghost-entry {
+    border: 1px solid var(--border);
+    padding: 1.8rem 1.4rem;
+    background: linear-gradient(180deg, rgba(30,22,18,0.4), rgba(10,6,4,0.7));
+    position: relative;
+    overflow: hidden;
+  }
+
+  .ghost-entry.locked {
+    opacity: 0.35;
+    filter: grayscale(0.6);
+  }
+
+  .ghost-entry::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--blood), transparent);
+    opacity: 0.5;
+  }
+
+  .ghost-entry .seal {
+    font-size: 4rem;
+    color: var(--blood);
+    text-align: center;
+    line-height: 1;
+    margin-bottom: 0.8rem;
+    opacity: 0.85;
+    letter-spacing: -0.05em;
+    font-weight: 900;
+  }
+
+  .ghost-entry h3 {
+    text-align: center;
+    color: var(--ink);
+    letter-spacing: 0.4em;
+    font-size: 1.3rem;
+    margin-bottom: 0.3rem;
+  }
+
+  .ghost-entry .hanja {
+    text-align: center;
+    color: var(--gold);
+    letter-spacing: 0.3em;
+    font-size: 0.8rem;
+    margin-bottom: 1.2rem;
+  }
+
+  .ghost-entry .desc {
+    color: var(--ink-dim);
+    font-size: 0.9rem;
+    line-height: 1.9;
+    letter-spacing: 0.02em;
+  }
+
+  .ghost-entry .locked-text {
+    text-align: center;
+    color: var(--ink-dim);
+    font-size: 0.85rem;
+    letter-spacing: 0.3em;
+    padding: 2rem 0;
+  }
+
+  .final-note {
+    text-align: center;
+    color: var(--gold);
+    font-size: 0.95rem;
+    letter-spacing: 0.2em;
+    margin: 2rem auto 1rem;
+    max-width: 560px;
+    line-height: 2;
+    padding: 1.5rem;
+    border: 1px solid var(--border);
+    border-top-color: var(--blood);
+    border-bottom-color: var(--blood);
+  }
+
+  .final-note button {
+    display: block;
+    margin: 1rem auto 0;
+    background: transparent;
+    border: 1px solid var(--blood);
+    color: var(--blood);
+    padding: 0.7rem 2rem;
+    font-family: inherit;
+    letter-spacing: 0.4em;
+    cursor: pointer;
+    font-size: 0.95rem;
+    transition: all 0.3s;
+  }
+
+  .final-note button:hover {
+    background: rgba(122,30,26,0.15);
+    color: #d88;
+    box-shadow: 0 0 20px rgba(122,30,26,0.3);
+  }
+
+  .reset-link {
+    display: block;
+    text-align: center;
+    color: var(--ink-dim);
+    font-size: 0.75rem;
+    letter-spacing: 0.3em;
+    margin-top: 2rem;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    padding: 0.5rem;
+  }
+
+  .reset-link:hover { color: var(--blood); }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- 캐릭터 선택 -->
+  <div id="screen-select" class="screen screen-hidden">
+    <div class="select-header">
+      <h2>시 점 을   고 르 다</h2>
+      <p>네 사람이 같은 바람을 맞으나, 각자 다른 흉신을 마주한다</p>
+    </div>
+    <div class="char-grid" id="char-grid"></div>
+    <div class="nav-bar">
+      <button class="btn-ghost" id="btn-back-title">← 처음으로</button>
+      <span></span>
+    </div>
+  </div>
+
+  <!-- 씬 재생 -->
+  <div id="screen-scene" class="screen screen-hidden">
+    <div class="scene-wrap">
+      <div class="scene-header">
+        <span class="scene-location" id="scene-location"></span>
+        <span class="scene-character" id="scene-character"></span>
+      </div>
+      <div class="scene-body" id="scene-body"></div>
+      <div class="scene-footer" id="scene-footer"></div>
+    </div>
+  </div>
+
+  <!-- 귓것 도감 -->
+  <div id="screen-bestiary" class="screen screen-hidden">
+    <div class="bestiary">
+      <div class="bestiary-header">
+        <h2>귓 것   도 감</h2>
+        <p>사람의 두려움을 먹고 뱉으며 살거니와,<br>흉함을 따르는 자들에게 올 것이나,<br>흉함의 한 가운데에서도 늘 귀함을 잊지 않은 자들에게도 올 것이매</p>
+      </div>
+      <div class="bestiary-grid" id="bestiary-grid"></div>
+      <div id="bestiary-final"></div>
+      <div class="nav-bar">
+        <button class="btn-ghost" id="btn-bestiary-back">← 처음으로</button>
+      </div>
+      <button class="reset-link" id="btn-reset">기 록 을   씻 김 굿 하 다</button>
+    </div>
+  </div>
+
+  <!-- 엔딩 -->
+  <div id="screen-ending" class="screen screen-hidden">
+    <div class="ending-screen">
+      <p class="ending-label" id="ending-label">결 말</p>
+      <h2 class="ending-title" id="ending-title"></h2>
+      <div class="ending-divider"></div>
+      <div class="ending-body" id="ending-body"></div>
+      <button class="btn btn-primary" id="btn-ending-back">시 점 선 택 으 로</button>
+    </div>
+  </div>
+
+  <!-- 타이틀 화면 -->
+  <div id="screen-title" class="title-screen">
+    <h1 class="title-main">귓것</h1>
+    <p class="title-sub">탑 의 기 억</p>
+    <p class="title-epigraph">
+      귀한 것은 하늘에 매여있고, 흉한 것은 땅에 매여있다.<br>
+      사람은 하늘이 귀할지라도 그 귀함을 모르며,<br>
+      땅이 흉할지라도 그 흉함을 모른다.
+      <cite>— 발라하리 전설</cite>
+    </p>
+    <div class="title-buttons">
+      <button class="btn btn-primary" id="btn-start">이 야 기 를   시 작 하 다</button>
+      <button class="btn" id="btn-continue" disabled>이 어 서   하 기</button>
+      <button class="btn" id="btn-bestiary" disabled>귓 것   도 감</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ===== 캐릭터 정보 =====
+  const CHARACTERS = {
+    diraq: {
+      id: 'diraq',
+      name: '디라크',
+      role: '퇴역 군인 / 탐사대장',
+      glyph: '劍',
+      desc: '제국 중앙군 출신의 노병. 익히 모르는 대륙에서 잿빛 탑의 문을 연다.',
+      location: '아말 대륙 · 이름 없는 탑',
+      ghost: 'docheol',
+    },
+    ahbiya: {
+      id: 'ahbiya',
+      name: '아비야',
+      role: '학술원 원생',
+      glyph: '字',
+      desc: '다하모 학술원에서 문학을 공부하는 청년. 할머니의 귀접을 따라 소도에 들다.',
+      location: '미오 연합 · 미트리아 성소',
+      ghost: 'hondon',
+    },
+    gerun: {
+      id: 'gerun',
+      name: '게룬',
+      role: '북방의 망나니',
+      glyph: '弓',
+      desc: '바랏사의 사고뭉치 청년. 다리를 다친 채 설산 수렵행에 기어이 오르다.',
+      location: '예히 공국 · 바랏사 설산',
+      ghost: 'gungi',
+    },
+    hiyar: {
+      id: 'hiyar',
+      name: '히야르',
+      role: '루한 소대장',
+      glyph: '雪',
+      desc: '유력 세도가의 조카. 함다 산 수색대를 이끌고 적진 깊숙이 들어가다.',
+      location: '루한 공국 · 함다 산',
+      ghost: 'doul',
+    },
+  };
+
+  const GHOSTS = {
+    docheol: {
+      name: '도철', subtitle: '饕餮', seal: '饕',
+      desc: '겉보기가 양처럼 순하고 미소짓는 사람의 얼굴을 하고 있지만, 성정이 사납고 몸이 날렵해 이와 마주치면 큰 상처를 입을 것이라. 두껍고 말려 올라간 양의 뿔, 흰자위가 없는 눈. 입속에는 혀가 없고, 갈고리 뒷다리로 사람의 그림자를 먹고 뱉는다.'
+    },
+    gungi: {
+      name: '궁기', subtitle: '窮奇', seal: '窮',
+      desc: '범의 몸을 가지고 독취의 날개를 지녔으니, 그 자태가 아름다워 눈을 빼앗기면 마음을 상할 것이라. 좌로 셋, 우로 셋의 수리 날개. 흰 털 사이로 드러나는 매끈한 여인의 알몸. 소리만으로도 사람을 땅에 엎드리게 한다.'
+    },
+    doul: {
+      name: '도올', subtitle: '檮杌', seal: '檮',
+      desc: '이리의 몸에 사람의 얽은 얼굴을 하여 생김새가 심히 괴이하니, 백 리 밖에서도 사람의 기척을 느껴 한 번 눈을 마주치면 그의 피를 취할 것이라. 얼굴의 갈라진 틈은 무겁게 타오르며 백색 파편을 흘린다. 분노한 그는 죄인을 씹어 저승으로 끌고 간다.'
+    },
+    hondon: {
+      name: '혼돈', subtitle: '渾沌', seal: '渾',
+      desc: '큰 곰의 어깨를 가지고 눈과 귀를 막고 있으며, 늘 꼬리를 물고 제자리를 돌 뿐이니 사람이 하늘을 보지 못하게 하여 혼과 백이 터를 잃고 흩어질 것이라. 두 장 반의 높이, 황소의 머리, 검푸른 연기의 몸. 앎을 추구하는 자에게 「네가 아는 것은 어디에 미치느냐」를 묻는다.'
+    },
+  };
+
+  // ===== 씬 저장소 (각 루트에서 채움) =====
+  const SCENES = {};
+
+  // ===== 디라크 루트 : 탑 프롤로그 =====
+  SCENES.diraq = {
+    start: {
+      lines: [
+        { text: '탑은 죽어있었다. 짙은 녹음 아래에 묻힌 잿빛 쇳덩어리는 홀로 신음할 뿐이다.' },
+        { text: '다섯 명의 조사단은 담쟁이덩굴을 부수고 입구를 넘어섰다. 덩치 큰 디라크는 등에 걸머진 다섯 자 날붙이의 무게를 다시 가늠해 보았다.' },
+        { type: 'dialogue', text: '귀신 나올 만한 곳이라더니……. 제사장들 말이 정확했네. 이번에는 제대로 찾은 거겠지?' },
+        { text: '네하는 여전히 능글거렸고, 해수는 도둑놈을 잡죄었다. 구에몬은 전국 시대의 문양을 읽었고, 세녹은 조용히 주변을 살폈다.' },
+        { text: '쓰러진 조각상들이 안쓰럽게 흩어져 있었으나, 2층으로 오르는 나선계단은 위압적이었다. 저 멀리 지하로 내려가는 통로가 보였다.' },
+        { type: 'whisper', text: '「일단 지하부터 훑어볼까.」' },
+      ],
+      next: 'descend',
+    },
+
+    descend: {
+      lines: [
+        { text: '지하 통로는 횃불이 없이는 한 걸음도 옮기기 힘들었다. 양쪽 벽의 부조는 깊이 들어갈수록 짙어졌고, 음각의 짐승들은 어느새 양각의 인간으로 바뀌었다.' },
+        { text: '벌거벗은 남녀의 교합. 인간을 집어삼키는 비대한 사람. 짐승과 뒤엉킨 군상. 머리 셋 달린 뱀이 상반신을 물어뜯고, 두 동강 난 다리는 벽면 바깥으로 돌출되어 있었다.' },
+        { type: 'dialogue', text: '이봐요 교수님, 어째 탑 전체가 이단과 음란의 소굴인 것 같은데. 우리 극락 가기는 글렀네.' },
+        { text: '구에몬은 기술적 성취를 들먹였다. 세녹은 긴 머리를 헝클어뜨리며 부르소 부족도 이 정도는 아니라 했다. 네하는 빙글거렸고, 디라크는 그저 속이 불편할 뿐이었다.' },
+        { text: '복도의 끝, 별무리가 장엄하게 휘감긴 매끈한 문이 나타났다. 장식도 새김도 없이, 지나치게 깨끗했다.' },
+      ],
+      choices: [
+        { text: '「내가 먼저 들어가 보겠네. 신호를 주기 전까진 따라오지 마라.」', next: 'room_alone' },
+        { text: '「다 함께 들어가세. 무슨 일이 나면 같이 봐야 할 것 아닌가.」', next: 'room_together' },
+      ],
+    },
+
+    room_alone: {
+      lines: [
+        { text: '디라크는 힘있게 문고리를 돌렸다. 뜻밖에도 문은 가볍게 열렸다.' },
+        { text: '횃불을 들이밀었지만 방의 폭조차 가늠할 수 없었다. 벽에 붙어 조심스레 발을 옮겨 횃불을 걸어놓고, 허리춤에 손을 올렸다.' },
+        { type: 'dialogue', text: '영감님, 어때요? 우리 들어가도 됩니까?' },
+        { text: '네하의 목소리가 문 밖에서 들려오는 순간, 디라크는 위화감에 사로잡혔다. 꼬마 도둑의 목소리는 마치 물속에서 듣는 것 같이 먹먹하고 둔탁했다.' },
+        { type: 'whisper', text: '어째 이리 더운 거지……?' },
+        { text: '땀 한 방울이 길게 흘렀다. 시야는 아직도 어두웠고, 어느새 방 중앙 부근에 도달해 있었다. 모서리에는 — 복도의 부조가 아닌, 진짜 조각상이 완연한 고체의 질감으로 서 있었다.' },
+      ],
+      next: 'combat_intro',
+    },
+
+    room_together: {
+      lines: [
+        { text: '디라크는 고집을 부리지 않았다. 조사단은 어깨를 맞대고 문을 넘어섰다.' },
+        { text: '그 순간, 사위가 먹먹해졌다. 옆 사람의 숨소리조차 물속처럼 둔탁했고, 구에몬의 분석은 허공에서 흩어졌다. 횃불 다섯 개는 어둠에 빨려 들어가 희미한 점이 되었다.' },
+        { type: 'omen', text: '방 안에 여섯 번째 그림자가 있었다.' },
+        { text: '세녹이 활을 들어 올리기도 전에 네하가 비명을 질렀다. 해수의 횃불이 바닥에 떨어지고, 구에몬의 목은 자기 어깨에서 떨어져 굴렀다.' },
+        { text: '디라크는 대검을 뽑았다. 일행의 피가 튀는 소리 사이에서, 그는 방 한가운데에 흉신이 슬며시 다가오는 것을 보았다.' },
+        { type: 'whisper', text: '—욕심이 컸구나, 늙은이.' },
+      ],
+      next: 'ending_taken',
+    },
+
+    combat_intro: {
+      lines: [
+        { text: '방 안의 공기가 끈적해졌다. 아말 대륙에서 제사장들이 통과 의례를 집전할 때 느꼈던 것보다, 짓누르는 힘이 훨씬 무거웠다.' },
+        { text: '문득 뒤를 돌아보니 문은 온데간데없이 벽으로 막혀 있었다. 벽면은 알 수 없는 액체로 뒤덮여 끈적했고, 곤충 떼가 무리 지어 다니는 듯 왱왱거렸다.' },
+        { text: '들숨에 사막 모래 냄새가 났다. 루한 기마대의 발굽, 불타는 고향, 떨어지는 집사의 목, 아이들의 울부짖음이 차례로 스쳐 지나갔다.' },
+        { type: 'whisper', text: '「그만둬……. 왜 이런 것에 취해있어야 하지?」' },
+        { text: '디라크는 마지막 자존심으로 대검을 세웠다. 저 앞에 스멀거리는 그림자는 분명히 횃불의 움직임과 무관했다.' },
+      ],
+      choices: [
+        { text: '「나와! 칼춤을 원하나? 멋들어지게 춰 보자고!」 — 검을 내지른다', next: 'combat' },
+        { text: '칼을 내리고 어둠을 응시한다 — 주마등을 붙잡는다', next: 'observe' },
+      ],
+    },
+
+    combat: {
+      lines: [
+        { text: '곧게 내지른 검이 청명한 소리를 내며 튕겨 나왔다. 쇠붙이를 튕겨낼 정도라면 범상한 짐승은 아닐 것이었다.' },
+        { text: '원을 그리며 돌기 시작했다. 시야가 제한된 상황에서 최선은 벽을 등지는 것이니, 어떻게든 몸을 이끌어 벽을 찾아야 했다. 다섯 발자국이 지났을 때, 등 뒤에서 서늘한 기운을 느끼고 팔을 크게 휘둘렀다.' },
+        { text: '허리의 힘을 완전히 쏟아부은 강맹한 공격이었지만, 여지없이 받아쳐졌다. 그는 자신의 검로를 완벽하게 차단하는 어떤 것이 벽에 붙으려던 자신을 오히려 방의 중앙으로 이끌어냈음을 깨달았다.' },
+        { type: 'whisper', text: '낭패다……. 이 녀석이 나를 도발한 것이 틀림없어.' },
+        { text: '갑옷의 꿰미를 끊고 날렵하게 검격을 풀어냈다. 기어코 적의 기척이 어렴풋이 잡혔다. 다 자란 표범에 미치지 못하는 크기, 짧은 털, 두툼한 앞발. 모서리로 몰아넣은 듯한 순간 — 대검을 두 손으로 잡고 무겁게 내리쳤다.' },
+        { type: 'dialogue', text: '잡았다, 이 녀석!' },
+      ],
+      next: 'flame',
+    },
+
+    observe: {
+      lines: [
+        { text: '디라크는 칼끝을 내렸다. 밀려오는 환영을 그대로 받았다.' },
+        { text: '오리바위 제단의 사흉신상이 횃불의 그림자를 삼켰다 뱉었다. 흉신이 죽음을 들고 찾아오면 벗어날 수 없다던 주술사의 고함이 귓바퀴를 긁었다.' },
+        { text: '디라크는 아홉 살 소년처럼 떨었다. 동시에, 수없이 죽음을 건너온 노병의 눈은 식어 있었다. 지금 이 자리가 낯선 곳이 아니라는, 기묘한 체감.' },
+        { type: 'whisper', text: '이것은 시아라의 밀밭이고, 스라 분지의 진흙이고, 모래 먹이의 말발굽이다. 모두 지나간 것이다.' },
+        { text: '그림자 속의 존재가 더는 등 뒤로 돌아오지 않았다. 오히려 방 중앙으로 먼저 물러서서 디라크를 기다리고 있었다.' },
+      ],
+      next: 'flame',
+    },
+
+    flame: {
+      lines: [
+        { type: 'omen', text: '순간 눈앞에 불이 화르르 타오르며 디라크의 눈을 쏘았다.' },
+        { text: '군인은 무기를 간신히 놓치지 않은 채 뒤로 주저앉고 말았다. 손으로 얼굴을 가린 채 억지로 눈을 뜬 디라크는 그 어느 곳에도 벽이 존재하지 않음을 자각했다. 앞에는 매개 없이 커다란 불덩이가 뜨겁게 타오르고 있을 뿐이었다. 그리고 불이 자신을 노려본다고 생각했다.' },
+        { text: '불덩이는 몸서리쳤지만 튀는 불똥은 전혀 없었다. 지나치게 깔끔한 움직임이었다. 천천히 상승해 디라크의 머리 위에서 멈출 무렵, 처음에 보았던 그 조각상이 슬며시 다가왔다.' },
+        { text: '이미 그것은 조각상이라 부를 수 없는 처지였다. 사람의 가슴께에 올 만한 크기, 둥그런 기단 위에 삭을 눈앞에 둔 그믐달처럼 가늘고 긴 것. 집 앞에 쌓인 첫눈같이 고운, 부드럽게 굽은 등.' },
+        { text: '조각상은 양 허리께에서 가늘고 검은 실을 자아냈다. 바닥과 평행을 이루며 뽑혀 나온 실은 날카로운 것을 돌에 긁는 소리를 내며 흐느적거렸다. 이내 팔다리로 볼 수 있을 만큼 형상을 갖추었다.' },
+        { type: 'whisper', text: '흉신이다……. 귓것이 날 찾아온 거야…….' },
+      ],
+      choices: [
+        { text: '대검을 움켜쥐고 끝까지 맞선다', next: 'ending_taken' },
+        { text: '무기를 떨어뜨리고 무릎 꿇는다 — 순리를 받아들인다', next: 'ending_marked' },
+        { text: '벽이 사라진 방에서 무작정 뒤로 달아난다', next: 'ending_flee' },
+      ],
+    },
+
+    ending_taken: {
+      ending: true,
+      kind: 'cursed',
+      label: '첫 째  결 말',
+      title: '흉 접 · 饕餮',
+      lines: [
+        { text: '대검이 허공을 가르는 소리는 우아한 조각상의 그것에 닿지 않았다.' },
+        { text: '흐느적거리는 팔은 노병의 어깨를 감쌌다. 다정한 포옹이라 해도 좋을, 익숙한 무게였다. 디라크는 사흉신상 앞에서 몸을 떨던 아홉 살 소년으로 돌아가, 눈을 꼭 감았다.' },
+        { text: '기린 깃발 아래에서 베어낸 울시아 소년의 목이 다시 그의 옆에서 굴렀다. 다코드에서 갈라놓은 제국군 장교의 배가 갈라진 채 미소 지었다. 잊고자 했던 이름들이 차례로 그의 몸을 거두어 갔다.' },
+        { type: 'whisper', text: '나락으로 떨어지듯, 천천히.' },
+        { text: '탑은 이제 거주인이 하나 더 늘었다. 움직임이 거의 없는 거주인이.' },
+      ],
+    },
+
+    ending_marked: {
+      ending: true,
+      kind: 'safe',
+      label: '둘 째  결 말',
+      title: '흉 주 · 凶呪',
+      lines: [
+        { text: '검이 땅에 떨어졌다. 디라크는 흙바닥에 이마를 대고 엎드렸다. 땀이 볼을 타고 손등에 떨어졌다.' },
+        { text: '「흉신은 변덕이 심하나 그 변덕이 이치에 어긋나지 않고, 사람의 마음을 자연스레 꿰뚫나니. 그의 앞에서는 마음을 함부로 먹지 말라. 그러나 그 마음을 완전히 비우게 되면 흉한 것이 도둑처럼 마음에 들 것이니 그 또한 삼갈지어다.」' },
+        { text: '주술사의 목소리가 입술을 건조하게 흔들었다. 사람은 몸을 낮추되 마음을 낮추지 않으며, 잡념을 버리되 온전히 버리지 않는다. 그는 흉신을 적대하지도 우러르지도 않았다.' },
+        { text: '웅혼한 소리가 귀를 찢었다. 끝도 없이 길고, 길고양이의 걸음보다도 부드러운.' },
+        { text: '정신을 차렸을 때, 디라크는 탑 앞의 이끼 낀 땅에 누워 있었다. 조사단은 그의 주위에서 울고 있었다. 그는 목이 터진 소리로 웃었다.' },
+        { text: '그의 어깻죽지에서 척추까지, 시커먼 소용돌이가 피부 위에 둥글게 박혀 있었다. 본 적 없는 낙인, 말로만 들어온 저주.' },
+        { type: 'whisper', text: '이 흉주는 — 나 혼자 짊어져야 할 것이다.' },
+      ],
+    },
+
+    ending_flee: {
+      ending: true,
+      kind: 'cursed',
+      label: '셋 째  결 말',
+      title: '벽 에  새 겨 지 다',
+      lines: [
+        { text: '디라크는 몸을 돌렸다. 문이 있었던 자리를 향해 뛰었다.' },
+        { text: '달릴수록 방은 넓어졌다. 팔 개의 벽이 끝없이 펼쳐지고, 그림자 사이로 그의 어린 친우들이 — 함다 산 부족의 또래 아이들이 — 하나둘 손을 내밀었다.' },
+        { text: '그들은 웃지 않았다. 울지도 않았다. 그저, 30년 전 마지막 본 모습 그대로였다.' },
+        { type: 'whisper', text: '주술사가 흉신 잘못 들으면 큰일이 난다 하지 않았던가. 언젠가 그분이 죽음을 들고 찾아오면 벗어날 수 없다…….' },
+        { text: '디라크의 발이 멈추었다. 그는 자신이 복도의 부조 중 하나가 되어 있음을 알았다. 돋을새김이 아닌, 깊고 깊은 음각으로.' },
+        { text: '탑의 지하, 뱀이 세 머리로 상반신을 물어뜯는 벽 옆에 새 장식이 하나 더해졌다. 입을 벌린 늙은 군인.' },
+      ],
+    },
+  };
+
+  // ===== 아비야 루트 : 미트리아 군화당 =====
+  SCENES.ahbiya = {
+    start: {
+      lines: [
+        { text: '큰 솟대를 지나는 순간, 아비야는 천 년 세월의 무게를 실감했다. 두툼한 향나무에 붉은 칠만 얹은 이 기둥은 장식 하나 없이도 소도의 중심에서 위엄을 드러냈다.' },
+        { text: '할머니 미치린은 오르보로 가는 동안 내내 횡설수설했지만, 무속 도시가 가까워질수록 오히려 차분해졌다. 평생을 연합 참모부 군무원으로 살아온 노인이 이제 입에 담는 것이라곤 오직 한 마디뿐이었다.' },
+        { type: 'whisper', text: '「혼돈이다……. 혼돈이…….」' },
+        { text: '천군의 성소는 웅장했다. 아무런 새김도, 칠도 없는 흙벽돌 덩어리. 할머니는 천군바라미의 손을 잡고 북부 지구로 향했다.' },
+        { type: 'dialogue', text: '늬들처럼 귓것 무서운 줄 모르는 애들이 천군을 뵈는 일에 따라올 이유가 없느니라.' },
+        { text: '아비야는 할머니의 뒷모습이 복도의 어둠에 삼켜지는 것을 지켜보았다. 부모님을 돌려보낸 뒤, 혼자 성소를 한 바퀴 돌아볼 참이었다.' },
+      ],
+      next: 'inner_garden',
+    },
+
+    inner_garden: {
+      lines: [
+        { text: '어둡고 탁한 복도를 깊게 들어가다, 아비야는 성소 중앙의 천장이 둥그렇게 뚫린 실내 공원을 발견했다. 이슬 머금은 잔디와 조그만 꽃밭. 노란 민들레가 이미 봉우리를 내보이고 있었다.' },
+        { text: '허리를 굽혀 꽃을 살피는데 뒤에서 낮은 목소리가 들렸다.' },
+        { type: 'dialogue', text: '「밖에서 왔니, 아가?」' },
+        { text: '검은 비단 두루마기에 붉은 천으로 눈을 가린 중년 여인이 서 있었다. 소매 사이로 드러난 팔은 모두 붉은 문양으로 덮여 있었다.' },
+        { type: 'dialogue', text: '「힌샘 노사 손녀딸이구먼. 이름이 어떻게 되니?」' },
+        { text: '신모(神母). 성소의 중생을 보살피는 이. 아비야는 앞도 보이지 않는 사람이 꽃 사이를 자연스럽게 걷는 것에 놀랐다.' },
+      ],
+      choices: [
+        { text: '신모에게 할머니의 귀접에 대해 묻는다', next: 'shinmo_talk' },
+        { text: '성소 곳곳의 탱화와 서향을 혼자 살핀다', next: 'solo_wander' },
+      ],
+    },
+
+    shinmo_talk: {
+      lines: [
+        { type: 'dialogue', text: '「귀신이 뭐 대단한 것이라고 불경하고 말고가 있다니. 좋을 것도 없고, 좋지 않을 것도 없단다.」' },
+        { text: '신모는 꽃밭에 물을 뿌렸다. 물통 위로 손을 흔들 때마다 흙이 반짝이며 숨을 쉬었다.' },
+        { type: 'dialogue', text: '「나쁜 마음으로 보면, 나쁘게 되는 법이지. 너도 그렇게 생각하니, 아가?」' },
+        { text: '아비야는 입을 다물었다. 학술원 교양과정에서 배운 귓맘은 그저 전래동화의 소재였다.' },
+        { type: 'whisper', text: '자기도 모르게, 목이 뜨거웠다.' },
+        { text: '그 순간, 신모가 고개를 홱 틀었다. 북쪽, 군화당의 방향이었다.' },
+      ],
+      next: 'alert',
+    },
+
+    solo_wander: {
+      lines: [
+        { text: '아비야는 신모에게 가볍게 묵례하고 일어섰다. 탱화들로 가득한 복도를 걸으며 고문학과의 방법론을 되새겼다. 풍속의 외재적 존재론. 시대상을 짐작할 근거.' },
+        { text: '그러나 눈은 복도의 새김을 따라가지 않았다. 왠지 모르게 북쪽으로, 북부 지구로 걸음이 끌렸다. 참선당 사이의 공기가 점점 탁해졌다.' },
+        { type: 'whisper', text: '고기 썩는 냄새.' },
+        { text: '아비야는 멈춰 섰다. 천장에서 새어 들어오는 빛이 복도 끝에서 흐려졌다. 뒤에서 부드러운 손이 어깨에 얹혔다.' },
+        { type: 'dialogue', text: '「앞도 안 보이는 아지매가 어찌 네 속을 알겠니, 아가?」' },
+        { text: '신모였다. 눈을 가린 채 웃고 있는 여인의 얼굴이 이상하게도, 아비야의 마음을 가라앉혔다.' },
+      ],
+      next: 'alert',
+    },
+
+    alert: {
+      lines: [
+        { text: '어린 선녀 하나가 북쪽 복도에서 뛰쳐나왔다. 베옷이 땀과 먼지로 범벅이었다.' },
+        { type: 'dialogue', text: '「신어머님! 군화당에……흉신이 강림하셨어요……!」' },
+        { text: '아비야는 이제 자신이 해야 할 일을 알았다.' },
+        { text: '신모는 차분하게 아비야의 얼굴을 양손으로 감쌌다. 아비야는 눈을 감았다. 벽난로의 불빛, 썩은 고기 냄새, 짐승의 울부짖음, 수많은 벌레가 기어 다니는 소리, 그리고 늙은 남성의 강렬한 호통이 동시에 쏟아졌다.' },
+        { text: '신모의 손이 관자놀이에 내려앉자 답답했던 가슴이 평안해졌다.' },
+        { type: 'dialogue', text: '「환란을 겪지 않은 아이야. 흉한 것을 덮지 말고, 알지 못하는 것에 무너지지 않아야 해.」' },
+      ],
+      next: 'corridor_run',
+    },
+
+    corridor_run: {
+      lines: [
+        { text: '북부 지구의 참선당은 사람들이 떨어뜨린 촛대로 인해 여기저기 조그만 불꽃을 입고 있었다. 매운 연기가 스멀거렸다. 아비야는 미궁처럼 꼬여있는 복도를 어떻게든 뚫고 달렸다.' },
+        { text: '세 개의 큰길과 두 개의 작은길이 나 있는 공터 앞. 발목이 꺾여 주저앉기 직전, 노인의 호통이 희미하게 귀를 간질였다.' },
+        { type: 'whisper', text: '「다……! 이런……없는 것이……! 돌려주시오……노사는…….」' },
+        { text: '가운뎃길에서 썩은 고기 냄새가 가장 짙었다. 아비야는 복도 끝의 커다란 목조 기둥들 앞에 섰다. 단청도 없이 매끈한 처마, 군화당(軍靴堂)이라는 세 글자.' },
+      ],
+      next: 'confront',
+    },
+
+    confront: {
+      lines: [
+        { type: 'omen', text: '감당할 수 있느냐?! 나를 당당하게 마주할 수 있느냔 말이다!' },
+        { text: '군화당 중앙에 우뚝 선 짐승. 높이가 두 장 반이라 천장을 찌를 기세에, 어깨는 사납게 솟았다. 곰 같은 몸은 육중하게 네 발을 디디고, 어깨 위로는 황소의 머리가 거칠게 투레질했다. 수염이 날 만한 입가에는 길고 넓적한 것이 달려 짐승의 눈과 귀를 막고 있다.' },
+        { text: '몸통은 검푸른 연기로 차오르다 흩어지기를 반복했다. 연기는 군화당 중앙의 노파 주변을 맴돌고, 끝자락은 그의 입에 물려 있었다.' },
+        { type: 'whisper', text: '할머니……!' },
+        { text: '미치린의 양팔은 팔꿈치에서 꺾여 뒤로 돌아갔다. 목은 어깻죽지가 터질 만큼 꺾였고, 오른쪽 발목은 떨어져 나갔다. 그 상태로, 노인은 제자리를 돌고 있었다.' },
+        { type: 'dialogue', text: '「너의 앎은 어디에 미치느냐! 무엇을 알고 무엇을 모르느냐!」' },
+        { text: '상좌에 정좌한 천군은 독경만 되뇔 뿐, 일어나지 못했다. 혼돈의 고함은 뇌성이 되어 군화당을 뒤흔들었다. 아비야는 귀에서 피가 흐르는 것을 느꼈다.' },
+      ],
+      choices: [
+        { text: '연기를 헤치고 할머니에게 다가간다', next: 'reach_grandma' },
+        { text: '무릎을 꿇고 혼돈의 꾸짖음을 받는다', next: 'kneel' },
+        { text: '「할머니 대신 나를 데려가세요」 — 혼돈과 거래한다', next: 'bargain' },
+      ],
+    },
+
+    reach_grandma: {
+      lines: [
+        { text: '아비야는 부어오른 발목을 끌며 일어섰다. 연기가 목구멍으로 들어와 비릿한 맛이 돌았다.' },
+        { type: 'dialogue', text: '「할머니……! 저 왔어요. 아나나비야!」' },
+        { text: '세상에서 할머니만 불러 주는 자기 이름을, 아비야는 소도 한복판에서 크게 외쳤다. 제자리를 돌던 미치린이 덜컥 멈추었다.' },
+        { text: '무서운 속도로 다가온 손이 손녀의 목을 붙잡았다. 앙상한 노인이 어디서 그런 힘이 나오는지, 핏줄이 터질 것 같은 주름진 손이 목덜미를 파고들었다.' },
+        { type: 'omen', text: '너의 앎은 어디에 미치느냐!' },
+        { text: '코앞에서 쏟아지는 뇌성이 정신을 아득하게 만들었다. 다하모의 벽난로, 학술원 강의동의 서향, 친구들의 얼굴이 빠르게 스쳤다. 아비야는 숨이 막히는 와중에도 할머니의 뺨에 손을 얹었다.' },
+      ],
+      next: 'ending_scholar',
+    },
+
+    kneel: {
+      lines: [
+        { text: '아비야는 그대로 주저앉았다. 연기가 그를 지나쳐 흩어졌다. 혼돈의 꾸짖음이 머리 위로 떨어졌지만, 땅에 이마를 댄 그는 고개를 들지 않았다.' },
+        { type: 'dialogue', text: '「너의 피와 살은 그러한 일을 보고도 막지 않았다! 너도 그럴 참이냐!」' },
+        { text: '천군의 독경이 아득하게 들려왔다. 아비야는 학술원에서 배운 풍속의 외재적 존재론이 이 자리에서 얼마나 부질없는지 깨달았다. 눈을 감으면 감쌀수록, 감히 모른다고 물러설 수도 없었다.' },
+        { type: 'whisper', text: '흉함을 받지도 내치지도 않으리다.' },
+        { text: '미치린의 몸에서 연기가 마지막까지 빠져나갔다. 노인의 얼굴에서 모든 힘이 풀리며, 손녀에게 해주고 싶었던 말이 혼돈의 목청을 빌려 아주 잠깐 흘러나왔다.' },
+        { type: 'dialogue', text: '「아나나비야……고맙다.」' },
+      ],
+      next: 'ending_inherit',
+    },
+
+    bargain: {
+      lines: [
+        { text: '아비야는 한쪽 다리를 질질 끌며 혼돈의 앞으로 나아갔다. 눈을 가린 소의 머리가 천천히 기울었다. 짐승이 사람을 보지 못했을 리 없는데, 이상하게 마음은 평온했다.' },
+        { type: 'dialogue', text: '「……할머니 대신 저를 데려가세요.」' },
+        { type: 'omen', text: '어리석은 아이야! 너의 피와 살을 구하려 하는구나!' },
+        { text: '혼돈의 몸에서 더욱 짙은 연기가 뿜어져 나왔다. 미치린의 입에서 흘러나오던 연기가 아비야를 감싸자, 노파의 몸은 덜컥 땅에 무너졌다. 더는 흔들리지 않았다. 더는 돌지 않았다.' },
+        { text: '짐승의 눈을 가린 긴 것이 슬며시 움직였다. 그 사이로 새까만 눈동자가 잠깐 보였다. 그것은 아비야의 얼굴을 찬찬히 살폈다.' },
+        { type: 'whisper', text: '「네가 감히 나와 거래를 하려 하느냐.」' },
+      ],
+      next: 'ending_taken',
+    },
+
+    ending_scholar: {
+      ending: true,
+      kind: 'safe',
+      label: '첫 째  결 말',
+      title: '앎 의  골 짜 기 로',
+      lines: [
+        { text: '「아직 앎이 품은 독에 닿지 않은 아이로구나! 좋다! 앞으로 네가 앎의 골짜기로 굴러떨어진다면, 나를 다시 볼 수 있게 될 것이다!」' },
+        { text: '혼돈은 끝내 미치린의 목숨을 받아냈다. 군화당의 모든 연기를 몸통으로 빨아들인 짐승은 커다란 붉은 연기로 변해 은은하게 퍼졌다. 미치린은 이목구비에서 피를 뿜으며 손녀의 무릎 위로 떨어졌다.' },
+        { text: '정신을 차렸을 때 아비야의 옆에는 부모님이 울고 있었고, 신모가 손을 잡고 있었다. 왼쪽 발등에는 검은 소용돌이가 박혀 있었다. 흉주였다.' },
+        { text: '「네 앞이 거칠구나, 아가. 세상 이곳저곳에 발자국을 남기면서 무엇을 얻으려 하는 거니?」' },
+        { type: 'whisper', text: '아비야는 답하지 않았다. 그저, 제국 학술원장이 흉접자를 찾는다는 말을 기억해 두었다.' },
+        { text: '황도는 멀었다. 그녀는 그 먼 곳으로 갈 작정이었다. 혼돈에게 물어야 할 것이 너무 많았다.' },
+      ],
+    },
+
+    ending_inherit: {
+      ending: true,
+      kind: 'safe',
+      label: '둘 째  결 말',
+      title: '귓 것 의  손 녀',
+      lines: [
+        { text: '혼돈은 마지막 연기를 거두고 군화당을 떠났다. 천군은 그제야 상좌에서 힘겹게 일어섰다.' },
+        { text: '미치린의 시신은 단풍나무 결로 엮은 상복에 싸여 나갔다. 노제의 상여는 소도의 모든 방위를 밟고 큰 솟대를 향했다. 아비야는 행렬의 후미에서 자색 비단 조각을 뿌렸다.' },
+        { type: 'dialogue', text: '「사람과 귀신이 섞이는 냄새 중 하나지. 지독하지 않니?」' },
+        { text: '신모가 옆에 와 있었다. 향목 가루를 뿌리는 손녀의 손등에는 어느새 붉은 문양이 번져 있었다. 귓맘에 들어앉은 사람의 자국이었다.' },
+        { type: 'whisper', text: '귀함과 흉함을 고르지 않고, 순리만을 기억하거라.' },
+        { text: '아비야는 다하모로 돌아가지 않기로 했다. 소도가, 이제는 집이었다.' },
+      ],
+    },
+
+    ending_taken: {
+      ending: true,
+      kind: 'cursed',
+      label: '셋 째  결 말',
+      title: '혼 돈 의  거 래',
+      lines: [
+        { text: '혼돈은 웃었다. 쇳소리 웃음이 군화당의 천장을 긁었다.' },
+        { text: '붉은 연기가 아비야의 몸을 감쌌다. 그 안에서 벽난로의 온기, 학우들의 농담, 자하파 교수의 강의, 미오 연합 정무원 엄마의 손길, 바다가 가까운 고향의 짠 냄새가 차례로 빠져나갔다.' },
+        { text: '아비야가 눈을 떴을 때, 군화당은 비어 있었다. 할머니의 시신은 단정하게 누워 있었다. 천군은 쓰러진 채 가쁘게 숨을 몰아쉬고 있었다. 연기는 모두 사라져 있었다.' },
+        { type: 'whisper', text: '아비야는 모든 것을 잊지 않았다. 다만, 그것들이 더는 자기 것이 아니라는 것만 알았다.' },
+        { text: '그녀는 그날부터 혼돈의 눈으로 세상을 보았다. 사람은 여전히 알고 있는 것을 모른다 했고, 모르는 것을 안다고 했다. 아비야는 끝없이 순례를 떠났다. 대륙 곳곳에서 그녀와 닮은 이야기를 만나는 사람들이 생겨났다.' },
+        { text: '그녀의 이름을 부르는 사람은 더는 없었다.' },
+      ],
+    },
+  };
+
+  // ===== 게룬 루트 : 바랏사 설산 =====
+  SCENES.gerun = {
+    start: {
+      lines: [
+        { text: '봄은 늘 싱그러웠다. 꽃이 피고 세상이 파랗게 변하고 먹거리가 시원해지고 먹고 나면 자연스레 나른해지는 그런 봄.' },
+        { text: '그런데 게룬은 발목에 부목을 댄 채 침상에 묶여 있다. 창고 물건에 올라가 엉덩이를 씰룩거리다 굴러떨어진 대가였다. 벗 마루는 빗자루만 놀리며 대꾸조차 하지 않는다.' },
+        { type: 'dialogue', text: '「이런 씹할! 머리에 털 나고 이런 경우는 처음이야. 왜 하필! 이 좋은 날에! 바람이 저렇게 불어오는 데 여기에 누워있어야 한다니!」' },
+        { text: '차주에 수렵행 인원이 잡힌다 했다. 오르보에서 온 모린 백작이란 작자가 멋대로 자기도 끼워달라 했다는 소문이 있었다.' },
+        { text: '그리고 파두스 대장장이가 떨리는 목소리로 마루에게 그 이유를 전했을 때, 바랏사에 칼바람이 몰아친 것보다 더 큰 소름이 게룬의 등을 타고 내렸다.' },
+        { type: 'omen', text: '궁기를 잡으러 간다고 하지 뭔가…….' },
+      ],
+      choices: [
+        { text: '밧줄을 갉아 탈출한다 — 기어코 수렵행에 낀다', next: 'hunt_join' },
+        { text: '침상에 남아 몸을 추스른다 — 무운을 빈다', next: 'hunt_skip' },
+      ],
+    },
+
+    hunt_skip: {
+      lines: [
+        { text: '게룬은 베개에 얼굴을 묻었다. 마을 뒤 구릉에도 봄이 와 있었고, 창문으로 흘러든 바람은 달았다.' },
+        { text: '사흘 뒤 새벽, 성문을 두들기는 소리가 들렸다. 마우리 대장이 양어깨에 눈을 얹고 들어왔다. 그의 얼굴에는 아들 마루가 없었다.' },
+        { type: 'whisper', text: '「……수렵행 전원, 설산에서 돌아오지 못했다.」' },
+        { text: '게룬은 밤새 울지 못했다. 창 밖의 봄은 여전히 싱그러웠다. 그것이 가장 큰 벌이었다.' },
+        { text: '몇 달 뒤, 바랏사에 외지인들이 몰려와 흉사를 조사한다 했다. 게룬은 그들에게 아무것도 말하지 못했다. 말할 것이 없었으므로.' },
+      ],
+      next: 'ending_watcher',
+    },
+
+    hunt_join: {
+      lines: [
+        { text: '게룬이 북서편 우물까지 기어가 잡혔다는 소식이 성주의 귀에 들어갔다. 여하튼 장정 한 명이 아쉬운 수렵행이었다. 대장장이의 아들 두카와 마구간지기 도윈이 부축해서 그를 행렬에 끼워주었다.' },
+        { text: '새벽에 출발한 수렵행은 저녁이 되어서야 설산 입구에 도착했다. 성주가 백발을 휘날리며 선두에 섰고, 모린 백작은 하얀 무복에 가죽을 덧댄 말쑥한 차림이었다.' },
+        { text: '첫 숙영지 눈마당에 도착해 천막을 세우는 동안, 게룬은 모닥불 옆에서 덜덜 떠는 오르보의 병사들을 곁눈질했다. 성 앞에서 자신에게 칼을 뽑던 놈이었다.' },
+        { type: 'whisper', text: '「……남부 사람들이 설산만 들어가면 글쎄 사타구니가 얼어붙어서 질질 짜는데…….」' },
+      ],
+      next: 'taunt',
+    },
+
+    taunt: {
+      lines: [
+        { text: '지휘소 천막 안, 백작이 끊임없이 자기 학구열을 떠벌리는 동안 성주는 식은땀을 흘렸다. 이윽고 백작의 혓바닥이 선을 넘었다.' },
+        { type: 'dialogue', text: '「그래서 제가 수렵행에 온 겁니다! 어떻게든 궁……아니, 그 흉신을 한번 보고 싶거든요.」' },
+        { text: '게룬의 눈이 가늘어졌다. 장작을 부리던 손이 탁 멈췄다.' },
+      ],
+      choices: [
+        { text: '바로 앞으로 들이밀어 혓바닥으로 조진다', next: 'taunt_full' },
+        { text: '입을 꾹 다물고 짐만 부린다', next: 'taunt_silent' },
+      ],
+    },
+
+    taunt_full: {
+      lines: [
+        { type: 'dialogue', text: '「우리 바랏사에도 조그마한 학술원 지부가 하나 있걸랑요. 거기 원생들은 법종이고 귓맘이고 모두 신경 쓰지 않지만 그렇다고 아예 무시하는 것도 아니에요. 당신처럼 북방의 전통을 제끼고 함부로 흉신을 입에 올려서 횡액 맞을 짓은 안 한다구요.」' },
+        { type: 'dialogue', text: '「하만 부족들과 발라하리 주술사들을 개차반 취급하다가 부르소 연맹이 제국 한 귀퉁이를 뜯어간 사실은 잠시 잊으신 거겠지요?」' },
+        { text: '백작의 얼굴이 터지기 직전까지 일그러졌다. 성주가 무어라 말릴 새도 없이, 군졸 한 명이 헐레벌떡 뛰어들었다.' },
+        { type: 'omen', text: '척후로 나간 병사들이……모두 죽었습니다!' },
+      ],
+      next: 'scouts',
+    },
+
+    taunt_silent: {
+      lines: [
+        { text: '게룬은 혓바닥을 삼켰다. 마우리 대장이 매번 「이놈아, 마루가 있었으면 네 주둥이를 꿰매놨을 건데」 하던 말이 떠올랐다.' },
+        { text: '모린 백작은 혼자 취해 계속 떠들었다. 궁기. 궁기. 영수. 학회 발표. 한니 평원의 사냥터. 한 마디 한 마디가 칼날처럼 지나갔지만, 게룬은 장작더미 뒤에 서 있었다.' },
+        { text: '그 순간 군졸이 뛰어들었다. 천막의 입춘대길 네 글자 아래로 눈바람이 칼칼하게 새어 들어왔다.' },
+        { type: 'omen', text: '척후로 나간 병사들이……모두 죽었습니다!' },
+      ],
+      next: 'scouts',
+    },
+
+    scouts: {
+      lines: [
+        { text: '시신은 열한 구였다. 모두 넝마나 다름없는 상태로, 웃고 있었다. 눈마당의 새벽이 그 웃음 위에 소복이 쌓였다.' },
+        { text: '양팔이 역관절로 꺾여 자기 목을 조른 모린의 근위병. 반대쪽 어깨에 왼손을 얹고 입을 찢어가며 절명한 바랏사 엽사. 하반신이 땅에 묻히고 양손이 사타구니를 꼭 움켜잡은 자. 손바닥의 체액이 허옇게 말라붙어 있었다.' },
+        { type: 'dialogue', text: '「도철이요, 도철! 흉물의 짓이요!」' },
+        { text: '두카가 귀엣말로 속삭이며 덜덜 떨었다. 게룬은 이 아이를 냉큼 쥐어박았다. 흉신을 함부로 이름 부를 일이 아니었다. 하지만 이미 모린 백작이 일을 시작한 뒤였다.' },
+        { type: 'whisper', text: '「숙영지를 옮긴다. 흰달마당으로.」' },
+        { text: '거센 눈바람이 몰아치기 시작했다. 다들 무릎을 꺾어가며 반대했지만, 마우리 대장은 묵묵히 말뚝을 뽑았다. 게룬은 두카의 어깨를 꽉 붙잡았다.' },
+      ],
+      next: 'march',
+    },
+
+    march: {
+      lines: [
+        { text: '눈발이 거세게 얼굴을 때렸다. 성주가 선두에 서고, 바랏사의 엽사들이 남부 병사들과 다투며 뒤를 따랐다. 게룬은 두카와 도윈 사이에 끼어 겨우 발을 뗐다.' },
+        { text: '흰달마당으로 가는 마지막 고개 위에서, 게룬은 무언가 우뚝 서 있는 것을 보았다. 키가 매우 크고, 몸매가 호리호리한 물체. 입을 벌려 소리를 질러보았지만, 전혀 목소리가 나오지 않았다.' },
+        { text: '엽사의 활대를 빼앗는 데 성공한 오르보 병사는 힘을 너무 주었는지 그것을 놓쳤고, 활은 멀리 날아가 땅에 닿기 전에 하늘을 보고 우뚝 그 자리에 갇혔다.' },
+        { type: 'omen', text: '시간이 멈추었다.' },
+      ],
+      next: 'encounter',
+    },
+
+    encounter: {
+      lines: [
+        { text: '궁기는 슬그머니 다가왔다. 흰 범의 가죽을 뒤집어쓴 듯, 궁기의 몸은 하얀 털로 뒤덮였고, 등에는 수리의 날개가 좌로 셋, 우로 셋이라.' },
+        { text: '세차게 몰아치는 눈이 쌓이지도, 그것에 젖지도 않은 채 자태가 고왔다. 몸을 휘감은 털 사이로 매끈한 여인의 알몸이 보였고, 여섯 장의 날개 틈에 자리 잡은 얼굴은 긴 눈썹에 새하얀 피부를 가져 아름답기 그지없다.' },
+        { text: '궁기는 슬픈 눈으로 게룬을 쳐다보다가, 양쪽 날개를 모두 들어 올리고 털을 휘날려 몸을 드러냈다.' },
+        { type: 'omen', text: '위이이이이이잉.' },
+        { text: '귀를 찢는 소리가 산을 갈랐다. 마우리 대장이 얼어붙었고, 도윈이 칼을 놓쳤다. 두카는 이미 넋이 나간 채 허리춤을 풀기 시작했다. 오르보 병사들은 눈밭에 엎어졌다.' },
+        { text: '게룬은 알았다. 다들 흉접을 하고 있다는 것을. 이제는 자기만 마지막으로 남았다.' },
+      ],
+      choices: [
+        { text: '춤을 추어 흉신의 아름다움에 화답한다', next: 'dance' },
+        { text: '눈을 감고 어머니 얼굴을 떠올린다', next: 'close_eyes' },
+        { text: '활을 들어 흉신을 겨눈다', next: 'draw_bow' },
+      ],
+    },
+
+    dance: {
+      lines: [
+        { text: '게룬은 다친 다리도 잊고 자세를 잡았다. 눈꺼풀 속에서 힘찬 엽인의 춤사위가 벌어졌다. 어렸을 때 부친이 말해주던 북방의 춤, 사냥감에 경의를 바치는 춤.' },
+        { text: '궁기가 날개를 접었다. 검은 무복을 입은 여인의 모습으로 천천히 가까워졌다. 그 얼굴이 눈에 익어 게룬은 고개를 갸우뚱했다.' },
+        { type: 'whisper', text: '「어머니?」' },
+        { text: '젊고 고운 궁기의 얼굴은 사라지고, 피눈물을 흘리는 중년 여인이 그곳에 있었다. 여인은 눈을 크게 뜨고 입을 벌려 끊임없이 토사물을 게워냈다. 짙고 끈적한 것이 입에서 흘러나올 때마다 목이 꺾였다.' },
+        { text: '게룬은 춤을 멈추지 않았다. 그럴 수 없었다. 멈추는 순간, 그것도 흉접이 된다는 것을 본능으로 알았다.' },
+      ],
+      next: 'ending_marked',
+    },
+
+    close_eyes: {
+      lines: [
+        { text: '게룬은 눈을 감았다. 궁기의 위잉 소리가 머릿속을 둥글게 채웠다. 눈꺼풀 안으로 빛이 들어왔다.' },
+        { text: '어머니 묘르의 얼굴이 보였다. 신열로 죽어가던 날, 주술사 사울 영감의 앞에서 "이 녀석 좀 건사해달라" 수없이 부탁하던 입모양. 무가에 몸을 담근 사람이 끝까지 속세에 미련을 두어 아들 옆을 맴돌았다는 그 업보.' },
+        { type: 'whisper', text: '어머니. 오늘은 다른 데 가세요. 여긴 제가 감당할게요.' },
+        { text: '묘르의 얼굴이 슬프게 웃고 뒷걸음질을 쳤다. 게룬은 눈을 뜨지 않았다. 뜨지 않을 생각이었다.' },
+        { text: '궁기가 조용히 그의 뒷덜미를 훑고 지나갔다. 마치, 사냥꾼이 사냥감에게 표식을 남기듯이.' },
+      ],
+      next: 'ending_escape',
+    },
+
+    draw_bow: {
+      lines: [
+        { text: '게룬은 두카의 어깨에서 활을 낚아챘다. 다친 다리가 무너질 뻔했지만 허리의 힘으로 버텼다. 시위를 당겨 궁기의 심장께를 겨누었다.' },
+        { text: '궁기는 슬픈 눈으로 게룬을 바라보았다. 그것은 분노가 아니라, 연민에 가까웠다.' },
+        { type: 'dialogue', text: '「엽인의 자식. 이 짐승을 쏘는 것은 너의 어미를 쏘는 것과 같다.」' },
+        { text: '화살은 궁기의 가슴에서 튕겨 나왔다. 여섯 날개가 한꺼번에 펼쳐지며 눈보라를 뒤집어엎었다. 게룬은 어머니의 얼굴이 떠오르기도 전에, 자신이 이미 얼굴을 잃고 있다는 것을 깨달았다.' },
+      ],
+      next: 'ending_taken',
+    },
+
+    ending_marked: {
+      ending: true,
+      kind: 'safe',
+      label: '첫 째  결 말',
+      title: '흉 주 · 凶呪',
+      lines: [
+        { text: '게룬은 어떻게 바랏사로 돌아왔는지 기억하지 못한다. 성문을 두들겼을 때, 경비병들이 얼음장이 된 청년을 안으로 들여놓았다. 그의 뒷덜미에는 처음 보는 검은 소용돌이가 박혀 있었다.' },
+        { text: '집사 군달은 눈물을 흘리며 글을 닦았다. 학술원 지부장 휴린 바후만이 급하게 달려와 슬쩍 소성주 하마칸에게 귀띔했다.' },
+        { type: 'dialogue', text: '「본원에서 흉접자를 찾고 있답니다. 우리 게룬을 황도로 보냅시다.」' },
+        { text: '사울 영감은 연초를 길게 뿜었다. 주술사들도 함부로 입에 올리지 않는 흉주다. 어머니 묘르가 말년에 아들을 건사해달라고 했던 이유를, 게룬은 이제야 알 것도 같았다.' },
+        { type: 'whisper', text: '「그 영감한테 가서 내 춤을 보여주고 오너라.」' },
+        { text: '게룬은 다하모를 거쳐 오르보로, 그리고 마침내 라한으로 갈 것이다. 어머니가 지불한 값의 끝까지.' },
+      ],
+    },
+
+    ending_escape: {
+      ending: true,
+      kind: 'safe',
+      label: '둘 째  결 말',
+      title: '사 냥 꾼 의  표 식',
+      lines: [
+        { text: '눈을 떴을 때, 흰달마당에는 아무도 없었다. 동료들의 짐과 천막, 발자국조차 남아있지 않았다. 마치 수렵행 자체가 이루어지지 않은 것처럼.' },
+        { text: '게룬은 절뚝거리며 하산했다. 사흘 동안 산 기슭에서 벌벌 떨다 성문에 도착했다. 경비병은 "죽은 줄 알았던 녀석이 혼자 돌아왔다"고 외쳤다.' },
+        { text: '그의 뒷덜미에는 멍 자국 하나도 없었다. 하지만 사울 영감은 청년의 눈을 똑바로 보고 고개를 저었다.' },
+        { type: 'dialogue', text: '「표식은 몸에 찍힌 것만 표식이 아니다.」' },
+        { type: 'whisper', text: '앞으로 게룬이 들어가는 산마다, 짐승들은 사람을 피하듯 그를 피했다. 흉신의 사냥감에게 찍힌 표식이었다.' },
+        { text: '그는 평생, 홀로 사냥했다. 그리고 사냥할 때마다, 어머니의 얼굴을 한 번씩 떠올렸다.' },
+      ],
+    },
+
+    ending_taken: {
+      ending: true,
+      kind: 'cursed',
+      label: '셋 째  결 말',
+      title: '궁 기 의  신 부',
+      lines: [
+        { text: '화살은 하늘로 솟구쳤다. 그리고 내려오지 않았다.' },
+        { text: '바랏사에서는 그해 봄, 수렵행 출발 후 아무도 돌아오지 않았다는 것만을 기록했다. 집사 군달은 경위서에 남부 조사관이 읽을 수 있을 만한 단어들만 골라 적었다.' },
+        { text: '몇 해가 지나고, 샤홀 근처 숲에서 사냥을 하던 심마니들이 이상한 이야기를 전했다. 밤에 안개가 낀 능선을 걷고 있으면, 긴 다리의 여섯 날개 달린 짐승이 호리호리한 청년과 함께 지나간다는.' },
+        { type: 'whisper', text: '그 청년은 웃고 있었다고 한다. 하염없이.' },
+        { text: '게룬은 궁기의 옆에서 엽사가 되었다. 그는 더는 바랏사의 사람이 아니었다.' },
+      ],
+    },
+
+    ending_watcher: {
+      ending: true,
+      kind: 'cursed',
+      label: '숨 겨 진  결 말',
+      title: '창 밖 의  봄',
+      lines: [
+        { text: '수렵행에 가지 못한 게룬은 오래 살았다. 아주 오래. 늙은 수염이 허옇게 셀 때까지, 해마다 봄이 오면 창문으로 바람을 맞았다.' },
+        { text: '그는 이따금 꿈을 꾸었다. 설산의 고개에서 어머니가 여섯 장의 날개를 펼치고 서 있는 꿈. 그때마다 식은땀을 흘렸지만, 눈을 뜨면 늘 창밖에 봄이 있었다.' },
+        { type: 'whisper', text: '「마루야. 그때 나를 좀 풀어주지 그랬냐.」' },
+        { text: '벗의 이름을 부를 수 있는 자는 더는 없었다. 게룬은 혼자서 늙었다. 침상에 묶여 있지는 않았지만, 늘 그 자리에 있었다.' },
+      ],
+    },
+  };
+
+  // ===== 히야르 루트 : 함다 산 교류 전선 =====
+  SCENES.hiyar = {
+    start: {
+      lines: [
+        { text: '루한 제2훈련감을 우수한 성적으로 졸업한 히야르 날뫼 참위는, 길조이의 제1 전방 지역에 배치된 지 얼마 되지 않아 자부심과 겸손함을 모두 잃어버렸다.' },
+        { text: '소대원의 얼굴 그림을 대조하며 이름을 외우려 할 필요도 없었다. 그들은 말을 섞어보기도 전에 산의 거름이 되어 땅에 누워버리곤 했으니.' },
+        { text: '지휘소 막사에 들어서니, 대대장 카힌 부령이 술에 취하지 않은 채 앉아 있었다. 구석에는 이름 모를 하사관 두 명이 수색낭에 두툼한 서류를 정리하고 있었다. 불길한 조합이었다.' },
+        { type: 'dialogue', text: '「계획과 달리 작전 기간이 조금 늘어날지도 모른다네. 본대로 복귀할 수 없으니, 병력 관리를 빈틈없이 해야 할 걸세.」' },
+        { text: '대대장은 양피지를 내밀었다. 기안번호가 없는, 1급 기밀. 히야르는 몇 줄을 읽다가 끔찍한 것을 발견하고야 말았다.' },
+        { type: 'omen', text: '도올.' },
+      ],
+      choices: [
+        { text: '「미신입니다.」 — 명령서에 공공연히 이의를 제기한다', next: 'brief_defy' },
+        { text: '「알겠습니다.」 — 입을 다물고 발령을 받아든다', next: 'brief_obey' },
+      ],
+    },
+
+    brief_defy: {
+      lines: [
+        { type: 'dialogue', text: '「함다 산 부족들이 퍼뜨리는 괴소문에 홀린 것이 아닙니까? 이게 정말로 교류전선에서 유격 작전 중인 군부대에 하달될 만한 명령입니까?」' },
+        { text: '카힌은 깊게 빨아들인 연초를 비틀어 끄고 고압적인 얼굴을 지어 보였다.' },
+        { type: 'dialogue', text: '「……자식, 눈치는 빨라가지고. 보다시피 이건 정보과의 공식 문서가 아닐세. 중요한 것은, 우리가 이 문서를 받았다는 사실이 대장군과 도원수까지 모두 알게 될 것이라는 거지. 기똥차게 뜨거운 이야기를 하나만 만들어주면 지원 병력이 더 늘어나지 않겠는가?」' },
+        { type: 'whisper', text: '연출자는 따로 있군…….' },
+        { text: '궁내부. 토가르 후작. 자신의 백부. 히야르는 모래를 씹는 기분이 되어 발끝을 모았다. 이 어이없는 작전에 자기 이름이 왜 필요한지, 이제는 너무 잘 알겠다.' },
+      ],
+      next: 'meet_haru',
+    },
+
+    brief_obey: {
+      lines: [
+        { text: '히야르는 크게 숨을 들이마셨다. 훈련감은 분명히 「지휘관이 상급부대의 미친 소리를 그대로 수용하여 작전을 지시하는 상황」에 대처하는 법을 가르쳐주지 않았다.' },
+        { type: 'dialogue', text: '「예, 알겠습니다!」' },
+        { text: '대대장의 입꼬리가 살짝 올라갔다. 능구렁이 같은 영감이었다. 궁내부가 원하든, 백부가 원하든, 결국에는 현장에서 죽어 나가는 것은 아랫것들이었다.' },
+        { text: '히야르는 자신이 진급 욕심 내는 중대장들처럼 명령을 받들기로 한 것이 씁쓸했다. 그나마 훈련감을 졸업한 젊은 귀족의 자존심을 한 꺼풀 벗어던진 것으로 위안을 삼았다.' },
+      ],
+      next: 'meet_haru',
+    },
+
+    meet_haru: {
+      lines: [
+        { text: '구석에 있던 하사관 두 명이 일어섰다. 체격 조건으로는 훈련감에서도 평균 이상이었던 히야르가, 앞에 다가온 하사관들 앞에서는 어깨를 펴기가 힘들었다.' },
+        { type: 'dialogue', text: '「단결. 처음 뵙겠습니다. 배속대장이 젊은 분이라 다행입니다. 앞으로 고된 산행이 이어질 예정이니 잘 부탁드립니다.」' },
+        { text: '불빛 아래에서야 히야르는 상급자로 보이는 부교가 머리가 짧은 여성임을 알았다. 람카 참교는 키가 작되 몸이 탄탄했고, 하도르 외솔 부교는 매끄러운 팔다리에 키가 훤칠했다. 소속은 기밀이라 했다.' },
+        { text: '특작 부대. 정보과가 보낸 사람들. 이들의 목표는 「제대로 된 도올」이 찍힌 보고서일 것이다. 히야르는 드디어 전쟁이 아니라, 다른 무엇을 시작해야 한다는 것을 알았다.' },
+      ],
+      next: 'crossing',
+    },
+
+    crossing: {
+      lines: [
+        { text: '중앙 능선을 타고 사냥개마루까지 올라오는 동안, 짐승들은 하나같이 꼬리를 말고 도망갔다. 불곰조차 예외가 아니었다.' },
+        { type: 'dialogue', text: '「함다 산 불곰이 사람 무서워하는 것 들어보셨습니까? 온몸에 화살 꽂고도 이십 리를 멀쩡하게 기어가는 놈입니다.」' },
+        { text: '히야르는 분대장의 말을 애써 무시했다. 드디어 예히의 동맹군이 보였다. 키가 작고 덥수룩한 수염의 하쿤 사내, 후카 보라나 정위가 군례를 건넸다.' },
+        { type: 'dialogue', text: '「중부 침투로를 빗겨 타고 올라가면 오모가리 고개까지 이틀 내로 갈 수 있겠구려. 조심하시오. 제국군보다 더 위험한 것이 존재할 수도 있소.」' },
+        { text: '남쪽 장애물이 깨끗하게 치워져 있었다. 동맹군도 알고 있었다. 그들도 미끼를 던지고 있는 것이었다.' },
+      ],
+      next: 'skirmish',
+    },
+
+    skirmish: {
+      lines: [
+        { text: '기도비닉 3단계로 올라간 수색대는 기습 화살을 맞았다. 하도르가 히야르를 넘어뜨려 화살비를 피하게 했다.' },
+        { type: 'dialogue', text: '「응사하라! 1분대 좌익 약진, 2분대 궁병 엄호, 참교 우회기동!」' },
+        { text: '히야르는 정면으로 달려들었다. 제국군 지휘관은 골격이 제법 큰 사내였고, 대검을 들고 그를 막아섰다. 체격에서 밀렸지만, 훈련감에서 갈고 닦은 쾌검이 있었다.' },
+        { text: '하도르의 단검이 제국군 궁수의 관자놀이를 뚫었다. 람카가 높은 곳으로 올라 목을 치는 동안, 히야르는 정면의 지휘관과 검을 맞대었다.' },
+        { type: 'whisper', text: '제국의 검법은 무겁고 정직하다. 무게를 겨루지 말고 흘려라.' },
+        { text: '지휘관은 끝내 부하들을 이끌고 남쪽 기슭으로 퇴각했다. 히야르는 주저앉아 숨을 골랐다. 추격할지, 여기서 멈출지 결정해야 했다.' },
+      ],
+      choices: [
+        { text: '기슭으로 추격한다 — 제국군의 숙영지를 뒤진다', next: 'corpses' },
+        { text: '오모가리 고개 진로를 유지한다 — 시간을 아낀다', next: 'advance' },
+      ],
+    },
+
+    advance: {
+      lines: [
+        { text: '히야르는 추격을 포기했다. 오모가리 고개는 서류상의 목표였지만, 그래도 지휘관으로서 임무는 완수해야 했다.' },
+        { text: '그러나 북진하는 동안, 짐승들의 양태가 이상했다. 잠에서 덜 깬 불곰조차 수색대를 보고 꼬리를 말았다. 밤이 되자 뒤에서 누군가 나무를 꺾고 수풀을 파헤치며 따라오는 소리가 들렸다.' },
+        { type: 'whisper', text: '「꼬리에 불이 붙었습니다.」' },
+        { text: '사하빈 분대장이 힐록 노병과 함께 마비산을 뿌렸다. 하지만 한 시진 째, 추격의 간격은 소름 끼칠 정도로 정밀하게 유지되었다. 이는 인간의 움직임이 아니었다.' },
+        { text: '제국군의 포위망일 수도 있었다. 하지만 히야르는 알았다. 포위망을 만들 만한 적군은 교류 전선에 없다는 것을. 저것은 다른 것이었다.' },
+      ],
+      next: 'pursuit_choice',
+    },
+
+    corpses: {
+      lines: [
+        { text: '남쪽 기슭의 작은 숙영지. 일회용 천막 두 동이 어지럽게 접혀있는 가운데, 일곱 구의 시체가 흩어져 있었다.' },
+        { text: '사지가 절단되거나 반 토막이 난 시체들. 가벼운 갑주 차림이었던 제국군은 모두 알몸이 되어있거나 넝마가 된 속옷을 반쯤 걸치고 있었다. 그리고 방금 전까지 검을 맞대었던 지휘관의 목 없는 시신이 한가운데에 있었다.' },
+        { text: '람카가 부풀어 오른 장기 하나를 들어 올려 내밀었다. 둥그렇고 말랑한 것이 손을 대자마자 가루처럼 바스라졌다.' },
+        { type: 'dialogue', text: '「죽은 지 한 식경도 안된 시체가 썩은 겁니다. 수색 의무관 5년 차에 이런 것은 처음 봅니다.」' },
+        { type: 'whisper', text: '범이 있었다면 우리한테도 왔겠지. 그리고 범은 무기를 먹지 않는다.' },
+        { text: '히야르는 주변의 날붙이와 갑주가 모조리 사라진 것을 알았다. 범이 아니었다. 제국군도 아니었다.' },
+      ],
+      next: 'pursuit_choice',
+    },
+
+    pursuit_choice: {
+      lines: [
+        { text: '새벽이 오기 전에, 히야르는 결정을 내려야 했다. 오모가리 고개는 서류상의 목표일 뿐이었고, 보급품은 제한되어 있으며, 대원들은 지쳐 있었다.' },
+        { text: '람카는 적극적인 수색을 주장했다. 하도르는 절충안을 내놓았다. 히야르는 자신이 훈련감 우등생이 아니라, 단지 스물 몇 살의 젊은이라는 것을 오랜만에 실감했다.' },
+        { text: '꼬리는 여전히 뒤에 붙어 있었다.' },
+      ],
+      choices: [
+        { text: '「임무 중단. 전원 본대로 복귀한다.」 — 살리는 것이 먼저다', next: 'return' },
+        { text: '「계속 전진한다. 고지를 점령한 뒤 결정한다.」 — 임무는 임무다', next: 'push' },
+      ],
+    },
+
+    return: {
+      lines: [
+        { text: '수색지대는 사냥개마루 방향으로 신속하게 회군했다. 길은 험했다. 람카는 보고서가 백지가 될 것이라 불평했지만, 히야르는 상관하지 않기로 했다.' },
+        { text: '숙영지로 돌아왔을 때, 저 멀리 사냥개마루에 횃불이 원을 그리다가 사방으로 퍼지는 것이 보였다. 공병대가 피울 수 있는 규모가 아니었다.' },
+        { text: '시루와 오트린의 부상이 심해 치료가 필요했다. 힐록 노병이 사하빈 마비산을 꺼냈다. 어떻게든 본대로 돌아가기 전에, 아이들을 살려야 했다.' },
+        { text: '그때 병사 하나가 수풀 쪽으로 돌을 던지기 시작했다.' },
+        { type: 'dialogue', text: '「저쪽에 분명히 누가 있었어요!」' },
+      ],
+      next: 'encounter',
+    },
+
+    push: {
+      lines: [
+        { text: '히야르는 입을 굳게 다물고 손을 내저었다. 회군은 수치였다.' },
+        { text: '그러나 한 시진도 지나지 않아, 수색대는 적의 추격을 떨쳐내지 못한다는 것을 인정해야 했다. 대원들의 기도비닉은 이미 깨진 지 오래였고, 보급품은 반으로 줄어들었다.' },
+        { text: '오모가리 고개 직전의 마지막 능선에서, 하도르가 조용히 말했다.' },
+        { type: 'dialogue', text: '「군대는 사기를 먹고 삽니다. 소대장님. 가장 다루기 어려운 군대는……세 가지가 있지요.」' },
+        { text: '히야르는 알고 있었다. 그중 하나는 퇴각하는 군대였고, 다른 하나는 길을 잃은 군대였으며, 마지막은 사기를 먹지도 뱉지도 못하는 군대였다. 그의 부대는 이미 셋 모두에 해당했다.' },
+        { type: 'whisper', text: '「……사냥개마루로 돌아간다.」' },
+      ],
+      next: 'encounter',
+    },
+
+    encounter: {
+      lines: [
+        { text: '사냥개마루 앞 공터. 사람의 시체가 보이지 않았다. 흙을 판 자리도 말끔했다. 공병대의 불빛이 현란하게 이지러지며 사방으로 퍼졌다가, 어느새 수풀 앞에 나와 있었다.' },
+        { text: '숲의 그림자에서 벗어난 이리의 몸은 거대했다. 적갈빛 털은 어두운 새벽에도 윤기가 흐르는 것이 훤히 보였고, 육중한 앞발과 뒷발은 범의 것을 닮아 강인했다.' },
+        { text: '두건을 쓴 듯 목의 갈기로 덮인 머리에는 이리의 아가리 대신 사람의 얼굴이, 열사흘부스럼이 왔다가 겨우 살아남은 듯한 아이의 얼굴이 있었다. 심하게 얽은 자국은 이리저리 깊게 파여 얼굴 전체에 눈이 달린 듯했고, 갈라진 틈은 여전히 무겁게 타오르며 빛을 뿜었다.' },
+        { type: 'omen', text: '도올.' },
+        { text: '람카가 검을 꺼내들었다. 하도르가 그의 팔을 잡으려 했지만 이미 늦었다.' },
+        { type: 'dialogue', text: '「저는 무슨 일이 있어도, 마긴의 더러운 짐승들과는 같은 하늘을 이고 살 수 없습니다!」' },
+      ],
+      choices: [
+        { text: '람카와 함께 돌격한다 — 전우를 버릴 수 없다', next: 'ending_charge' },
+        { text: '하도르의 품에 몸을 맡긴다 — 살아서 증언하라', next: 'ending_ditch' },
+        { text: '혼자 숲으로 달아난다 — 백부의 그늘로 돌아간다', next: 'ending_flee' },
+      ],
+    },
+
+    ending_charge: {
+      ending: true,
+      kind: 'cursed',
+      label: '첫 째  결 말',
+      title: '시 아 라 에 서  죽 은  자 들',
+      lines: [
+        { text: '히야르는 대검을 뽑았다. 람카의 등 뒤에서, 그는 일곱 살 때 포목점 주인의 망아지를 훔쳤던 그 소년으로 잠깐 돌아갔다. 백부의 말을 떠올렸다.' },
+        { type: 'whisper', text: '「도올에게 물려가지 않으려면 어떻게 해야겠어?」' },
+        { text: '나쁜 짓을 하지 않아야 한다고, 어린 히야르는 눈물을 훔치며 대답했다. 이불에는 누렇게 뜬 웅덩이 자국이 남았다.' },
+        { text: '람카의 몸이 짐승의 입에 물려 다리가 밤하늘에 휘저어지는 것을 보았을 때, 히야르는 서슴없이 그 옆으로 뛰어들었다.' },
+        { text: '훗날 시아라에서 죽은 그의 누이 해나가 오라버니 옆에서 손을 내밀었다. 기린 깃발 아래, 배신자의 이름으로 묻힌 이들이 그를 맞이했다.' },
+        { text: '본대에는 하도르 홀로 돌아왔다.' },
+      ],
+    },
+
+    ending_ditch: {
+      ending: true,
+      kind: 'safe',
+      label: '둘 째  결 말',
+      title: '흉 주 · 凶呪',
+      lines: [
+        { text: '하도르의 사정없는 발길질에, 히야르는 구덩이 속으로 굴러떨어졌다. 밧줄에 묶인 것처럼 힘을 쓸 수 없었고, 하도르가 그의 몸을 힘껏 누르며 무어라 외쳤다.' },
+        { text: '머리 위로 흙더미가 쏟아졌다. 구덩이 틈으로, 구름 한 점 없는 못생긴 달이 떨어지는 피에 가려졌다. 사람이 씹히는 소리, 뼈가 부러지는 소리, 짐승이 우는 소리.' },
+        { text: '정신을 차렸을 때, 사냥개마루의 앞마당에는 그 어떤 참상의 흔적도 없었다. 도올도, 대원들의 시체도 없이 깨끗했다.' },
+        { text: '하도르의 왼쪽 팔에는 검은 소용돌이가 박혀 있었다. 히야르는 자신의 몸에도 어딘가에 그것이 있을 것을 알았다. 확인할 용기는 없었다.' },
+        { type: 'dialogue', text: '「이 사건의 경위는 함부로 정보과에 내보낼 수가 없네. 자네, 일단은 군단 본부에 그럴듯한 보고를 올려야겠네. 그리고……내부 분석용으로 제대로 된 녀석을 하나 더 만들어 줘야겠어.」' },
+        { text: '백부는 진짜 미끼가 필요했다. 히야르는 라한으로 갈 것이다. 농발거미의 서신이 기다리고 있었다.' },
+      ],
+    },
+
+    ending_flee: {
+      ending: true,
+      kind: 'cursed',
+      label: '셋 째  결 말',
+      title: '백 부 의  조 카',
+      lines: [
+        { text: '히야르는 하도르의 손을 뿌리쳤다. 그는 뛰었다. 수풀 속으로, 남쪽으로, 사냥개마루 너머로.' },
+        { text: '짐승의 울음소리가 멀어졌다. 대원들의 비명이 다시 멀어졌다. 새벽이 밝아올 때까지, 그는 달렸다.' },
+        { text: '길조이의 지휘소로 돌아왔을 때, 카힌 부령은 말없이 그를 쳐다보았다. 이틀 뒤, 토가르 후작의 친서가 도착했다. 장조카의 안위를 걱정하는 따뜻한 글월이었다.' },
+        { text: '히야르는 그 글월을 아주 오래 들여다보았다. 서신의 마지막 줄에 이렇게 쓰여 있었다.' },
+        { type: 'whisper', text: '「사건의 경위는 내가 적당히 정리해두마. 너는 편히 쉬거라.」' },
+        { text: '그는 진급했다. 정위가 되었고, 이윽고 훈련감으로 돌아갔다. 장교 양성관 교관이 되어, 후배들에게 함다 산에 대해 아주 자세히 강의했다. 도올이라는 이름만 빼고.' },
+        { text: '매일 밤, 그는 누렇게 뜬 웅덩이를 만들던 일곱 살 소년의 꿈을 꾸었다.' },
+      ],
+    },
+  };
+
+  // ===== 게임 상태 =====
+  const STORAGE_KEY = 'gitgeot_save_v1';
+
+  const State = {
+    data: {
+      completed: {},      // { diraq: true, ahbiya: true, ... }
+      bestiary: {},       // { docheol: true, hondon: true, ... }
+      currentScene: null,
+    },
+    load() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) this.data = Object.assign(this.data, JSON.parse(raw));
+      } catch(e) {}
+    },
+    save() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(this.data));
+      } catch(e) {}
+    },
+    reset() {
+      this.data = { completed: {}, bestiary: {}, currentScene: null };
+      this.save();
+    },
+    hasSave() {
+      return this.data.currentScene !== null;
+    },
+    hasBestiary() {
+      return Object.keys(this.data.bestiary).length > 0;
+    }
+  };
+
+  // ===== 화면 전환 =====
+  function showScreen(id) {
+    document.querySelectorAll('.screen, .title-screen').forEach(el => {
+      el.classList.add('screen-hidden');
+    });
+    const target = document.getElementById(id);
+    if (target) target.classList.remove('screen-hidden');
+  }
+
+  // ===== 캐릭터 선택 =====
+  function renderCharSelect() {
+    const grid = document.getElementById('char-grid');
+    grid.innerHTML = '';
+    Object.values(CHARACTERS).forEach(ch => {
+      const completed = State.data.completed[ch.id];
+      const card = document.createElement('div');
+      card.className = 'char-card' + (completed ? ' completed' : '');
+      card.innerHTML = `
+        <div class="glyph">${ch.glyph}</div>
+        <h3>${ch.name}</h3>
+        <div class="role">${ch.role}</div>
+        <div class="desc">${ch.desc}</div>
+      `;
+      card.addEventListener('click', () => startRoute(ch.id));
+      grid.appendChild(card);
+    });
+    showScreen('screen-select');
+  }
+
+  // ===== 씬 재생 엔진 =====
+  const Scene = {
+    currentRoute: null,
+    currentId: null,
+    typingTimer: null,
+    skip: false,
+
+    start(route, sceneId) {
+      this.currentRoute = route;
+      this.currentId = sceneId;
+      const ch = CHARACTERS[route];
+      document.getElementById('scene-location').textContent = ch.location;
+      document.getElementById('scene-character').textContent = ch.name;
+      State.data.currentScene = { route, sceneId };
+      State.save();
+      showScreen('screen-scene');
+      this.render();
+    },
+
+    render() {
+      const scene = SCENES[this.currentRoute] && SCENES[this.currentRoute][this.currentId];
+      if (!scene) {
+        console.error('Scene not found:', this.currentRoute, this.currentId);
+        return;
+      }
+
+      if (scene.ending) {
+        this.showEnding(scene);
+        return;
+      }
+
+      const body = document.getElementById('scene-body');
+      const footer = document.getElementById('scene-footer');
+      body.innerHTML = '';
+      footer.innerHTML = '';
+      body.scrollTop = 0;
+      this.skip = false;
+
+      this.typeLines(scene.lines || [], 0, body, () => {
+        this.renderFooter(scene, footer);
+      });
+    },
+
+    typeLines(lines, idx, container, done) {
+      if (idx >= lines.length) { done(); return; }
+
+      const line = lines[idx];
+      const p = document.createElement('p');
+      if (line.type) p.classList.add(line.type);
+      p.classList.add('cursor-blink');
+      container.appendChild(p);
+      container.scrollTop = container.scrollHeight;
+
+      const text = line.text || '';
+      let i = 0;
+      const step = () => {
+        if (this.skip) {
+          p.textContent = text;
+          p.classList.remove('cursor-blink');
+          this.typeLines(lines, idx + 1, container, done);
+          return;
+        }
+        if (i <= text.length) {
+          p.textContent = text.slice(0, i);
+          i++;
+          container.scrollTop = container.scrollHeight;
+          this.typingTimer = setTimeout(step, line.type === 'omen' ? 70 : 22);
+        } else {
+          p.classList.remove('cursor-blink');
+          this.typingTimer = setTimeout(() => {
+            this.typeLines(lines, idx + 1, container, done);
+          }, line.type === 'omen' ? 600 : 180);
+        }
+      };
+      step();
+    },
+
+    skipTyping() {
+      this.skip = true;
+    },
+
+    renderFooter(scene, footer) {
+      if (scene.choices && scene.choices.length) {
+        const wrap = document.createElement('div');
+        wrap.className = 'choices';
+        scene.choices.forEach((ch, i) => {
+          const btn = document.createElement('button');
+          btn.className = 'choice';
+          btn.innerHTML = `<span class="idx">${['一','二','三','四'][i]||(i+1)}</span>${ch.text}`;
+          btn.addEventListener('click', () => {
+            Scene.start(this.currentRoute, ch.next);
+          });
+          wrap.appendChild(btn);
+        });
+        footer.appendChild(wrap);
+      } else if (scene.next) {
+        const btn = document.createElement('button');
+        btn.className = 'continue-btn';
+        btn.textContent = '다 음   →';
+        btn.addEventListener('click', () => Scene.start(this.currentRoute, scene.next));
+        footer.appendChild(btn);
+      }
+    },
+
+    showEnding(scene) {
+      const titleEl = document.getElementById('ending-title');
+      const labelEl = document.getElementById('ending-label');
+      const bodyEl = document.getElementById('ending-body');
+
+      titleEl.className = 'ending-title';
+      if (scene.kind) titleEl.classList.add(scene.kind);
+      titleEl.textContent = scene.title || '결말';
+      labelEl.textContent = scene.label || '결 말';
+
+      bodyEl.innerHTML = '';
+      (scene.lines || []).forEach(l => {
+        const p = document.createElement('p');
+        if (l.type) p.classList.add(l.type);
+        p.textContent = l.text;
+        bodyEl.appendChild(p);
+      });
+
+      // 루트 완료 기록, 도감 해금
+      State.data.completed[this.currentRoute] = scene.kind || true;
+      const ch = CHARACTERS[this.currentRoute];
+      if (ch && ch.ghost) State.data.bestiary[ch.ghost] = true;
+      State.data.currentScene = null;
+      State.save();
+
+      showScreen('screen-ending');
+    },
+  };
+
+  function startRoute(charId) {
+    if (!SCENES[charId]) {
+      alert('이 시점의 이야기는 다음 단계에서 담깁니다.');
+      return;
+    }
+    Scene.start(charId, 'start');
+  }
+
+  // ===== 도감 =====
+  function renderBestiary() {
+    const grid = document.getElementById('bestiary-grid');
+    grid.innerHTML = '';
+    Object.entries(GHOSTS).forEach(([id, g]) => {
+      const unlocked = !!State.data.bestiary[id];
+      const entry = document.createElement('div');
+      entry.className = 'ghost-entry' + (unlocked ? '' : ' locked');
+      entry.innerHTML = unlocked
+        ? `<div class="seal">${g.seal}</div>
+           <h3>${g.name}</h3>
+           <div class="hanja">${g.subtitle}</div>
+           <div class="desc">${g.desc}</div>`
+        : `<div class="seal">?</div>
+           <h3>???</h3>
+           <div class="hanja">? ? ?</div>
+           <div class="locked-text">아 직   마 주 하 지   못 한   흉 신</div>`;
+      grid.appendChild(entry);
+    });
+
+    // 네 루트 모두 완료 시 최종 엔딩 해금
+    const allDone = ['diraq','ahbiya','gerun','hiyar'].every(
+      id => State.data.completed[id]
+    );
+    const finalEl = document.getElementById('bestiary-final');
+    finalEl.innerHTML = '';
+    if (allDone && !State.data.seenFinal) {
+      const note = document.createElement('div');
+      note.className = 'final-note';
+      note.innerHTML = `
+        네 사람의 이야기가 모두 끝났다.<br>
+        네 귓것은 모두 사람의 두려움을 먹고 뱉었다.<br>
+        그러나 이 모든 흉함의 한가운데에서 — 탑은 여전히 고요하다.
+        <button id="btn-final">탑 의   마 지 막 을   보 다</button>
+      `;
+      finalEl.appendChild(note);
+      document.getElementById('btn-final').addEventListener('click', showFinalEnding);
+    } else if (allDone && State.data.seenFinal) {
+      const note = document.createElement('div');
+      note.className = 'final-note';
+      note.innerHTML = `
+        탑은 여전히 죽어있다.<br>
+        그리고 너는, 그것을 안 사람이다.
+        <button id="btn-final">다 시   탑 으 로</button>
+      `;
+      finalEl.appendChild(note);
+      document.getElementById('btn-final').addEventListener('click', showFinalEnding);
+    }
+
+    showScreen('screen-bestiary');
+  }
+
+  // ===== 최종 엔딩 =====
+  function showFinalEnding() {
+    State.data.seenFinal = true;
+    State.save();
+
+    const titleEl = document.getElementById('ending-title');
+    const labelEl = document.getElementById('ending-label');
+    const bodyEl = document.getElementById('ending-body');
+
+    titleEl.className = 'ending-title';
+    titleEl.textContent = '탑 은  여 전 히  죽 어 있 다';
+    labelEl.textContent = '최 후 의  결 말';
+
+    const finalLines = [
+      { text: '대륙 네 귀퉁이에서 네 사람이 동시에 귓것을 보았다.' },
+      { text: '디라크는 탑의 지하에서 흉주를 얻었고, 아비야는 소도의 군화당에서 할머니를 잃었다. 게룬은 설산에서 어머니의 얼굴을 불렀고, 히야르는 함다 산의 구덩이에서 흙을 뒤집어썼다.' },
+      { text: '학술원장 피골리 박사는 붓을 들고 라한의 현천각에 앉았다. 선황이 미완성으로 남긴 탑의 추적은 이제 그의 손에 있었다. 네 명의 흉접자가 있다. 네 명의 살아남은 자가 있다. 그리고 네 개의 소용돌이 문양이 있다.' },
+      { type: 'whisper', text: '탑은 죽어있었다.' },
+      { text: '짙은 녹음 아래에 묻힌 잿빛 쇳덩어리는 홀로 신음할 뿐이다. 별안간 짓쳐 드는 초봄의 바람에도 다부진 몸을 내세우며 서 있지만, 탑 주변 수없이 쌓인 짐승의 사체를 추모하는 듯 가끔은 휘었다.' },
+      { text: '탑은 기다리고 있었다. 네 사람이 도착하기를. 혹은, 그들이 포기하기를.' },
+      { type: 'omen', text: '귓것은 사람의 두려움을 먹고 뱉으며 살거니와…….' },
+      { text: '이 이야기는 끝나지 않았다. 어떤 이는 황도로 향하고, 어떤 이는 설산에 남고, 어떤 이는 소도를 지키고, 어떤 이는 훈련감으로 돌아간다. 대륙은 여전히 찢어져 있고, 평화는 여전히 끔찍한 침묵이다.' },
+      { text: '그리고 탑은, 언제나처럼 죽어있다.' },
+    ];
+
+    bodyEl.innerHTML = '';
+    finalLines.forEach(l => {
+      const p = document.createElement('p');
+      if (l.type) p.classList.add(l.type);
+      p.textContent = l.text;
+      bodyEl.appendChild(p);
+    });
+
+    document.getElementById('btn-ending-back').textContent = '도 감 으 로';
+    showScreen('screen-ending');
+  }
+
+  function resetSave() {
+    if (!confirm('모든 기록이 사라집니다. 계속하시겠습니까?')) return;
+    State.reset();
+    location.reload();
+  }
+
+  // ===== 초기화 =====
+  function init() {
+    State.load();
+
+    // 버튼 활성화
+    const btnContinue = document.getElementById('btn-continue');
+    const btnBestiary = document.getElementById('btn-bestiary');
+    if (State.hasSave()) btnContinue.disabled = false;
+    if (State.hasBestiary()) btnBestiary.disabled = false;
+
+    document.getElementById('btn-start').addEventListener('click', renderCharSelect);
+
+    document.getElementById('btn-continue').addEventListener('click', () => {
+      if (State.data.currentScene) {
+        Scene.start(State.data.currentScene.route, State.data.currentScene.sceneId);
+      }
+    });
+
+    document.getElementById('btn-bestiary').addEventListener('click', renderBestiary);
+    document.getElementById('btn-bestiary-back').addEventListener('click', () => {
+      showScreen('screen-title');
+      refreshTitleButtons();
+    });
+    document.getElementById('btn-reset').addEventListener('click', resetSave);
+
+    document.getElementById('btn-back-title').addEventListener('click', () => {
+      showScreen('screen-title');
+      refreshTitleButtons();
+    });
+
+    document.getElementById('btn-ending-back').addEventListener('click', () => {
+      const btn = document.getElementById('btn-ending-back');
+      // 최종 엔딩 직후면 도감으로 돌려보낸다
+      if (btn.textContent.includes('도감')) {
+        btn.textContent = '시 점 선 택 으 로';
+        renderBestiary();
+      } else {
+        renderCharSelect();
+      }
+    });
+
+    // 씬 화면에서 클릭 시 타이핑 스킵
+    document.getElementById('screen-scene').addEventListener('click', (e) => {
+      if (e.target.tagName === 'BUTTON') return;
+      Scene.skipTyping();
+    });
+  }
+
+  function refreshTitleButtons() {
+    document.getElementById('btn-continue').disabled = !State.hasSave();
+    document.getElementById('btn-bestiary').disabled = !State.hasBestiary();
+  }
+
+  init();
+</script>
+</body>
+</html>
