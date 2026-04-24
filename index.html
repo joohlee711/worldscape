@@ -475,6 +475,152 @@
     background: linear-gradient(90deg, transparent, var(--gold), transparent);
     opacity: 0.4;
   }
+
+  /* ===== 귓것 도감 ===== */
+  .bestiary {
+    padding: 1rem 0.5rem;
+  }
+
+  .bestiary-header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+  }
+
+  .bestiary-header h2 {
+    font-size: 2rem;
+    letter-spacing: 0.4em;
+    color: var(--accent);
+    font-weight: 500;
+    margin-bottom: 0.6rem;
+  }
+
+  .bestiary-header p {
+    color: var(--ink-dim);
+    font-size: 0.9rem;
+    letter-spacing: 0.15em;
+    line-height: 1.8;
+  }
+
+  .bestiary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .ghost-entry {
+    border: 1px solid var(--border);
+    padding: 1.8rem 1.4rem;
+    background: linear-gradient(180deg, rgba(30,22,18,0.4), rgba(10,6,4,0.7));
+    position: relative;
+    overflow: hidden;
+  }
+
+  .ghost-entry.locked {
+    opacity: 0.35;
+    filter: grayscale(0.6);
+  }
+
+  .ghost-entry::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--blood), transparent);
+    opacity: 0.5;
+  }
+
+  .ghost-entry .seal {
+    font-size: 4rem;
+    color: var(--blood);
+    text-align: center;
+    line-height: 1;
+    margin-bottom: 0.8rem;
+    opacity: 0.85;
+    letter-spacing: -0.05em;
+    font-weight: 900;
+  }
+
+  .ghost-entry h3 {
+    text-align: center;
+    color: var(--ink);
+    letter-spacing: 0.4em;
+    font-size: 1.3rem;
+    margin-bottom: 0.3rem;
+  }
+
+  .ghost-entry .hanja {
+    text-align: center;
+    color: var(--gold);
+    letter-spacing: 0.3em;
+    font-size: 0.8rem;
+    margin-bottom: 1.2rem;
+  }
+
+  .ghost-entry .desc {
+    color: var(--ink-dim);
+    font-size: 0.9rem;
+    line-height: 1.9;
+    letter-spacing: 0.02em;
+  }
+
+  .ghost-entry .locked-text {
+    text-align: center;
+    color: var(--ink-dim);
+    font-size: 0.85rem;
+    letter-spacing: 0.3em;
+    padding: 2rem 0;
+  }
+
+  .final-note {
+    text-align: center;
+    color: var(--gold);
+    font-size: 0.95rem;
+    letter-spacing: 0.2em;
+    margin: 2rem auto 1rem;
+    max-width: 560px;
+    line-height: 2;
+    padding: 1.5rem;
+    border: 1px solid var(--border);
+    border-top-color: var(--blood);
+    border-bottom-color: var(--blood);
+  }
+
+  .final-note button {
+    display: block;
+    margin: 1rem auto 0;
+    background: transparent;
+    border: 1px solid var(--blood);
+    color: var(--blood);
+    padding: 0.7rem 2rem;
+    font-family: inherit;
+    letter-spacing: 0.4em;
+    cursor: pointer;
+    font-size: 0.95rem;
+    transition: all 0.3s;
+  }
+
+  .final-note button:hover {
+    background: rgba(122,30,26,0.15);
+    color: #d88;
+    box-shadow: 0 0 20px rgba(122,30,26,0.3);
+  }
+
+  .reset-link {
+    display: block;
+    text-align: center;
+    color: var(--ink-dim);
+    font-size: 0.75rem;
+    letter-spacing: 0.3em;
+    margin-top: 2rem;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    padding: 0.5rem;
+  }
+
+  .reset-link:hover { color: var(--blood); }
 </style>
 </head>
 <body>
@@ -502,6 +648,22 @@
       </div>
       <div class="scene-body" id="scene-body"></div>
       <div class="scene-footer" id="scene-footer"></div>
+    </div>
+  </div>
+
+  <!-- 귓것 도감 -->
+  <div id="screen-bestiary" class="screen screen-hidden">
+    <div class="bestiary">
+      <div class="bestiary-header">
+        <h2>귓 것   도 감</h2>
+        <p>사람의 두려움을 먹고 뱉으며 살거니와,<br>흉함을 따르는 자들에게 올 것이나,<br>흉함의 한 가운데에서도 늘 귀함을 잊지 않은 자들에게도 올 것이매</p>
+      </div>
+      <div class="bestiary-grid" id="bestiary-grid"></div>
+      <div id="bestiary-final"></div>
+      <div class="nav-bar">
+        <button class="btn-ghost" id="btn-bestiary-back">← 처음으로</button>
+      </div>
+      <button class="reset-link" id="btn-reset">기 록 을   씻 김 굿 하 다</button>
     </div>
   </div>
 
@@ -577,10 +739,22 @@
   };
 
   const GHOSTS = {
-    docheol: { name: '도철', subtitle: '饕餮' },
-    gungi:   { name: '궁기', subtitle: '窮奇' },
-    doul:    { name: '도올', subtitle: '檮杌' },
-    hondon:  { name: '혼돈', subtitle: '渾沌' },
+    docheol: {
+      name: '도철', subtitle: '饕餮', seal: '饕',
+      desc: '겉보기가 양처럼 순하고 미소짓는 사람의 얼굴을 하고 있지만, 성정이 사납고 몸이 날렵해 이와 마주치면 큰 상처를 입을 것이라. 두껍고 말려 올라간 양의 뿔, 흰자위가 없는 눈. 입속에는 혀가 없고, 갈고리 뒷다리로 사람의 그림자를 먹고 뱉는다.'
+    },
+    gungi: {
+      name: '궁기', subtitle: '窮奇', seal: '窮',
+      desc: '범의 몸을 가지고 독취의 날개를 지녔으니, 그 자태가 아름다워 눈을 빼앗기면 마음을 상할 것이라. 좌로 셋, 우로 셋의 수리 날개. 흰 털 사이로 드러나는 매끈한 여인의 알몸. 소리만으로도 사람을 땅에 엎드리게 한다.'
+    },
+    doul: {
+      name: '도올', subtitle: '檮杌', seal: '檮',
+      desc: '이리의 몸에 사람의 얽은 얼굴을 하여 생김새가 심히 괴이하니, 백 리 밖에서도 사람의 기척을 느껴 한 번 눈을 마주치면 그의 피를 취할 것이라. 얼굴의 갈라진 틈은 무겁게 타오르며 백색 파편을 흘린다. 분노한 그는 죄인을 씹어 저승으로 끌고 간다.'
+    },
+    hondon: {
+      name: '혼돈', subtitle: '渾沌', seal: '渾',
+      desc: '큰 곰의 어깨를 가지고 눈과 귀를 막고 있으며, 늘 꼬리를 물고 제자리를 돌 뿐이니 사람이 하늘을 보지 못하게 하여 혼과 백이 터를 잃고 흩어질 것이라. 두 장 반의 높이, 황소의 머리, 검푸른 연기의 몸. 앎을 추구하는 자에게 「네가 아는 것은 어디에 미치느냐」를 묻는다.'
+    },
   };
 
   // ===== 씬 저장소 (각 루트에서 채움) =====
@@ -1506,6 +1680,101 @@
     Scene.start(charId, 'start');
   }
 
+  // ===== 도감 =====
+  function renderBestiary() {
+    const grid = document.getElementById('bestiary-grid');
+    grid.innerHTML = '';
+    Object.entries(GHOSTS).forEach(([id, g]) => {
+      const unlocked = !!State.data.bestiary[id];
+      const entry = document.createElement('div');
+      entry.className = 'ghost-entry' + (unlocked ? '' : ' locked');
+      entry.innerHTML = unlocked
+        ? `<div class="seal">${g.seal}</div>
+           <h3>${g.name}</h3>
+           <div class="hanja">${g.subtitle}</div>
+           <div class="desc">${g.desc}</div>`
+        : `<div class="seal">?</div>
+           <h3>???</h3>
+           <div class="hanja">? ? ?</div>
+           <div class="locked-text">아 직   마 주 하 지   못 한   흉 신</div>`;
+      grid.appendChild(entry);
+    });
+
+    // 네 루트 모두 완료 시 최종 엔딩 해금
+    const allDone = ['diraq','ahbiya','gerun','hiyar'].every(
+      id => State.data.completed[id]
+    );
+    const finalEl = document.getElementById('bestiary-final');
+    finalEl.innerHTML = '';
+    if (allDone && !State.data.seenFinal) {
+      const note = document.createElement('div');
+      note.className = 'final-note';
+      note.innerHTML = `
+        네 사람의 이야기가 모두 끝났다.<br>
+        네 귓것은 모두 사람의 두려움을 먹고 뱉었다.<br>
+        그러나 이 모든 흉함의 한가운데에서 — 탑은 여전히 고요하다.
+        <button id="btn-final">탑 의   마 지 막 을   보 다</button>
+      `;
+      finalEl.appendChild(note);
+      document.getElementById('btn-final').addEventListener('click', showFinalEnding);
+    } else if (allDone && State.data.seenFinal) {
+      const note = document.createElement('div');
+      note.className = 'final-note';
+      note.innerHTML = `
+        탑은 여전히 죽어있다.<br>
+        그리고 너는, 그것을 안 사람이다.
+        <button id="btn-final">다 시   탑 으 로</button>
+      `;
+      finalEl.appendChild(note);
+      document.getElementById('btn-final').addEventListener('click', showFinalEnding);
+    }
+
+    showScreen('screen-bestiary');
+  }
+
+  // ===== 최종 엔딩 =====
+  function showFinalEnding() {
+    State.data.seenFinal = true;
+    State.save();
+
+    const titleEl = document.getElementById('ending-title');
+    const labelEl = document.getElementById('ending-label');
+    const bodyEl = document.getElementById('ending-body');
+
+    titleEl.className = 'ending-title';
+    titleEl.textContent = '탑 은  여 전 히  죽 어 있 다';
+    labelEl.textContent = '최 후 의  결 말';
+
+    const finalLines = [
+      { text: '대륙 네 귀퉁이에서 네 사람이 동시에 귓것을 보았다.' },
+      { text: '디라크는 탑의 지하에서 흉주를 얻었고, 아비야는 소도의 군화당에서 할머니를 잃었다. 게룬은 설산에서 어머니의 얼굴을 불렀고, 히야르는 함다 산의 구덩이에서 흙을 뒤집어썼다.' },
+      { text: '학술원장 피골리 박사는 붓을 들고 라한의 현천각에 앉았다. 선황이 미완성으로 남긴 탑의 추적은 이제 그의 손에 있었다. 네 명의 흉접자가 있다. 네 명의 살아남은 자가 있다. 그리고 네 개의 소용돌이 문양이 있다.' },
+      { type: 'whisper', text: '탑은 죽어있었다.' },
+      { text: '짙은 녹음 아래에 묻힌 잿빛 쇳덩어리는 홀로 신음할 뿐이다. 별안간 짓쳐 드는 초봄의 바람에도 다부진 몸을 내세우며 서 있지만, 탑 주변 수없이 쌓인 짐승의 사체를 추모하는 듯 가끔은 휘었다.' },
+      { text: '탑은 기다리고 있었다. 네 사람이 도착하기를. 혹은, 그들이 포기하기를.' },
+      { type: 'omen', text: '귓것은 사람의 두려움을 먹고 뱉으며 살거니와…….' },
+      { text: '이 이야기는 끝나지 않았다. 어떤 이는 황도로 향하고, 어떤 이는 설산에 남고, 어떤 이는 소도를 지키고, 어떤 이는 훈련감으로 돌아간다. 대륙은 여전히 찢어져 있고, 평화는 여전히 끔찍한 침묵이다.' },
+      { text: '그리고 탑은, 언제나처럼 죽어있다.' },
+    ];
+
+    bodyEl.innerHTML = '';
+    finalLines.forEach(l => {
+      const p = document.createElement('p');
+      if (l.type) p.classList.add(l.type);
+      p.textContent = l.text;
+      bodyEl.appendChild(p);
+    });
+
+    document.getElementById('btn-ending-back').textContent = '도 감 으 로';
+    showScreen('screen-ending');
+  }
+
+  function resetSave() {
+    if (!confirm('모든 기록이 사라집니다. 계속하시겠습니까?')) return;
+    State.reset();
+    location.reload();
+  }
+
   // ===== 초기화 =====
   function init() {
     State.load();
@@ -1524,9 +1793,12 @@
       }
     });
 
-    document.getElementById('btn-bestiary').addEventListener('click', () => {
-      alert('도감은 다음 단계에서 구현됩니다.');
+    document.getElementById('btn-bestiary').addEventListener('click', renderBestiary);
+    document.getElementById('btn-bestiary-back').addEventListener('click', () => {
+      showScreen('screen-title');
+      refreshTitleButtons();
     });
+    document.getElementById('btn-reset').addEventListener('click', resetSave);
 
     document.getElementById('btn-back-title').addEventListener('click', () => {
       showScreen('screen-title');
@@ -1534,7 +1806,14 @@
     });
 
     document.getElementById('btn-ending-back').addEventListener('click', () => {
-      renderCharSelect();
+      const btn = document.getElementById('btn-ending-back');
+      // 최종 엔딩 직후면 도감으로 돌려보낸다
+      if (btn.textContent.includes('도감')) {
+        btn.textContent = '시 점 선 택 으 로';
+        renderBestiary();
+      } else {
+        renderCharSelect();
+      }
     });
 
     // 씬 화면에서 클릭 시 타이핑 스킵
