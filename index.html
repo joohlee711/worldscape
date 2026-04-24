@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>귓것 — 탑의 기억</title>
+<style>
+  :root {
+    --bg: #0a0706;
+    --bg-soft: #120e0c;
+    --ink: #e8d8b8;
+    --ink-dim: #8a7960;
+    --blood: #7a1e1a;
+    --gold: #a88853;
+    --accent: #c9a76a;
+    --border: #3a2e22;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Serif KR", "Nanum Myeongjo", "Batang", serif;
+    overflow: hidden;
+  }
+
+  body {
+    background:
+      radial-gradient(ellipse at 50% 20%, rgba(90,40,20,0.25), transparent 60%),
+      radial-gradient(ellipse at 50% 100%, rgba(0,0,0,0.8), transparent 60%),
+      var(--bg);
+    position: relative;
+  }
+
+  /* 배경 노이즈 (먹 번짐 느낌) */
+  body::before {
+    content: "";
+    position: fixed; inset: 0;
+    background-image:
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.015) 0 1px, transparent 1px 3px),
+      repeating-linear-gradient(90deg, rgba(0,0,0,0.04) 0 1px, transparent 1px 4px);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  #app {
+    position: relative;
+    z-index: 2;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+  }
+
+  /* ===== 타이틀 화면 ===== */
+  .title-screen {
+    text-align: center;
+    max-width: 760px;
+    animation: fadeIn 1.8s ease-out;
+  }
+
+  .title-main {
+    font-size: clamp(4rem, 12vw, 8rem);
+    font-weight: 900;
+    letter-spacing: 0.3em;
+    color: var(--ink);
+    text-shadow:
+      0 0 20px rgba(170, 40, 20, 0.4),
+      0 0 60px rgba(170, 40, 20, 0.15);
+    margin-bottom: 0.5rem;
+    position: relative;
+  }
+
+  .title-main::after {
+    content: "";
+    display: block;
+    width: 40%;
+    height: 1px;
+    margin: 1.2rem auto 0.8rem;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  }
+
+  .title-sub {
+    font-size: clamp(1rem, 2vw, 1.3rem);
+    color: var(--ink-dim);
+    letter-spacing: 0.4em;
+    margin-bottom: 3rem;
+  }
+
+  .title-epigraph {
+    font-size: 0.95rem;
+    color: var(--ink-dim);
+    line-height: 2;
+    max-width: 520px;
+    margin: 0 auto 3.5rem;
+    font-style: italic;
+    opacity: 0.85;
+    text-align: center;
+  }
+
+  .title-epigraph cite {
+    display: block;
+    margin-top: 1rem;
+    font-size: 0.8rem;
+    color: var(--gold);
+    font-style: normal;
+    letter-spacing: 0.2em;
+  }
+
+  .title-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    align-items: center;
+  }
+
+  .btn {
+    background: transparent;
+    color: var(--ink);
+    border: 1px solid var(--border);
+    padding: 0.9rem 3rem;
+    font-size: 1rem;
+    font-family: inherit;
+    letter-spacing: 0.3em;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 260px;
+    position: relative;
+  }
+
+  .btn:hover {
+    background: rgba(201, 167, 106, 0.08);
+    border-color: var(--accent);
+    color: var(--accent);
+    letter-spacing: 0.4em;
+  }
+
+  .btn:disabled {
+    color: var(--ink-dim);
+    border-color: #2a2018;
+    cursor: not-allowed;
+  }
+
+  .btn-primary {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .btn-primary:hover {
+    background: rgba(201, 167, 106, 0.15);
+    box-shadow: 0 0 20px rgba(201, 167, 106, 0.2);
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeInSlow {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  /* ===== 공통 화면 컨테이너 ===== */
+  .screen {
+    width: 100%;
+    max-width: 900px;
+    animation: fadeIn 0.8s ease-out;
+  }
+
+  .screen-hidden { display: none; }
+
+  /* 임시 - 후속 단계에서 확장 */
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- 타이틀 화면 -->
+  <div id="screen-title" class="title-screen">
+    <h1 class="title-main">귓것</h1>
+    <p class="title-sub">탑 의 기 억</p>
+    <p class="title-epigraph">
+      귀한 것은 하늘에 매여있고, 흉한 것은 땅에 매여있다.<br>
+      사람은 하늘이 귀할지라도 그 귀함을 모르며,<br>
+      땅이 흉할지라도 그 흉함을 모른다.
+      <cite>— 발라하리 전설</cite>
+    </p>
+    <div class="title-buttons">
+      <button class="btn btn-primary" id="btn-start">이 야 기 를   시 작 하 다</button>
+      <button class="btn" id="btn-continue" disabled>이 어 서   하 기</button>
+      <button class="btn" id="btn-bestiary" disabled>귓 것   도 감</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ===== 게임 상태 =====
+  const STORAGE_KEY = 'gitgeot_save_v1';
+
+  const State = {
+    data: {
+      completed: {},      // { diraq: true, ahbiya: true, ... }
+      bestiary: {},       // { docheol: true, hondon: true, ... }
+      currentScene: null,
+    },
+    load() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) this.data = Object.assign(this.data, JSON.parse(raw));
+      } catch(e) {}
+    },
+    save() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(this.data));
+      } catch(e) {}
+    },
+    reset() {
+      this.data = { completed: {}, bestiary: {}, currentScene: null };
+      this.save();
+    },
+    hasSave() {
+      return this.data.currentScene !== null;
+    },
+    hasBestiary() {
+      return Object.keys(this.data.bestiary).length > 0;
+    }
+  };
+
+  // ===== 화면 전환 =====
+  function showScreen(id) {
+    document.querySelectorAll('.screen, .title-screen').forEach(el => {
+      el.classList.add('screen-hidden');
+    });
+    const target = document.getElementById(id);
+    if (target) target.classList.remove('screen-hidden');
+  }
+
+  // ===== 초기화 =====
+  function init() {
+    State.load();
+
+    // 버튼 활성화
+    const btnContinue = document.getElementById('btn-continue');
+    const btnBestiary = document.getElementById('btn-bestiary');
+    if (State.hasSave()) btnContinue.disabled = false;
+    if (State.hasBestiary()) btnBestiary.disabled = false;
+
+    document.getElementById('btn-start').addEventListener('click', () => {
+      // 다음 단계에서 캐릭터 선택 화면으로 이동
+      alert('캐릭터 선택 화면은 다음 단계에서 구현됩니다.');
+    });
+
+    document.getElementById('btn-continue').addEventListener('click', () => {
+      alert('이어하기는 다음 단계에서 구현됩니다.');
+    });
+
+    document.getElementById('btn-bestiary').addEventListener('click', () => {
+      alert('도감은 다음 단계에서 구현됩니다.');
+    });
+  }
+
+  init();
+</script>
+</body>
+</html>
